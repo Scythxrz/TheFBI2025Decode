@@ -3,9 +3,9 @@ package org.firstinspires.ftc.teamcode.opmode;
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 import static org.firstinspires.ftc.teamcode.config.globals.Poses.*;
 
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -56,13 +56,12 @@ import java.io.IOException;
  *   DPAD left      — toggle alliance (Blue / Red)
  *   DPAD right     — toggle start side (Close / Far)
  */
-@Config
+@Configurable
 @Autonomous(name = "Auto", group = "AAAAuto", preselectTeleOp = "TeleOp")
 public class Auton extends CommandOpMode {
 
     // ─── Robot & telemetry ────────────────────────────────────────────────────
     private final Robot robot = Robot.getInstance();
-    private TelemetryData telemetryData;
     private ElapsedTime loopTimer;
     private Follower follower;
 
@@ -73,7 +72,7 @@ public class Auton extends CommandOpMode {
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.CLOSE_18;
     private boolean  isBlue           = true;
-
+    private TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
     private boolean upLast, downLast, leftLast, rightLast;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
@@ -81,10 +80,6 @@ public class Auton extends CommandOpMode {
     public void initialize() {
         super.reset();
         OP_MODE_TYPE = OpModeType.AUTO;
-
-        telemetryData = new TelemetryData(
-                new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry())
-        );
 
         robot.init(hardwareMap);
         follower = PedroConstants.createFollower(hardwareMap);
@@ -126,11 +121,11 @@ public class Auton extends CommandOpMode {
             schedule(buildSequence());
         }
 
-        telemetryData.addData("Alliance",  isBlue ? "BLUE" : "RED");
-        telemetryData.addData("Start",     selectedStart);
-        telemetryData.addData("Sequence",  selectedSequence);
-        telemetry.addLine("↑↓ sequence  |  ← alliance  |  → start side");
-        telemetryData.update();
+        telemetryM.addData("Alliance",  isBlue ? "BLUE" : "RED");
+        telemetryM.addData("Start",     selectedStart);
+        telemetryM.addData("Sequence",  selectedSequence);
+        telemetryM.addLine("↑↓ sequence  |  ← alliance  |  → start side");
+        telemetryM.update();
     }
 
     // ─── run() ────────────────────────────────────────────────────────────────
@@ -140,14 +135,14 @@ public class Auton extends CommandOpMode {
 
         follower.update();
 
-        telemetryData.addData("Loop ms",   loopTimer.milliseconds());
-        telemetryData.addData("Pose",      follower.getPose());
-        telemetryData.addData("Flywheel",  robot.flywheel.getVelocity());
-        telemetryData.addData("FW Target", robot.flywheel.getTargetVelocity());
-        telemetryData.addData("FW Ready",  robot.flywheel.atTarget());
+        telemetryM.addData("Loop ms",   loopTimer.milliseconds());
+        telemetryM.addData("Pose",      follower.getPose());
+        telemetryM.addData("Flywheel",  robot.flywheel.getVelocity());
+        telemetryM.addData("FW Target", robot.flywheel.getTargetVelocity());
+        telemetryM.addData("FW Ready",  robot.flywheel.atTarget());
 
         loopTimer.reset();
-        robot.updateLoop(telemetryData);
+        robot.updateLoop(telemetryM);
     }
 
     // ─── end() ────────────────────────────────────────────────────────────────

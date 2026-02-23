@@ -2,9 +2,9 @@ package org.firstinspires.ftc.teamcode.opmode;
 
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 
-import com.acmerobotics.dashboard.FtcDashboard;
-import com.acmerobotics.dashboard.config.Config;
-import com.acmerobotics.dashboard.telemetry.MultipleTelemetry;
+import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
@@ -37,7 +37,7 @@ import java.util.Objects;
  *   • Shooting is handled by LaunchSequence (whileActiveContinuous on Y/A)
  *   • Intake is handled by SetIntake instant commands
  */
-@Config
+@Configurable
 @TeleOp(name = "TeleOp", group = "AAATeleOp")
 public class Teleop extends CommandOpMode {
 
@@ -69,6 +69,9 @@ public class Teleop extends CommandOpMode {
     public static double[] RESET_BLUE = {32, 135, 270};
     public static double[] RESET_RED  = {12,   8,  90};
 
+    // Init telemetry
+    private TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+
     // Park pose
     public static double[] PARK_POSE = {41.678, 29.632, 270};
 
@@ -86,10 +89,6 @@ public class Teleop extends CommandOpMode {
 
         OP_MODE_TYPE = OpModeType.TELEOP;
 
-        // Telemetry with FTC Dashboard support
-        telemetryData = new TelemetryData(
-                new MultipleTelemetry(telemetry, FtcDashboard.getInstance().getTelemetry())
-        );
 
         // Initialize all hardware and register subsystems with CommandScheduler
         robot.init(hardwareMap);
@@ -243,20 +242,20 @@ public class Teleop extends CommandOpMode {
         // robot.limelight is available if you want to call getLatestResult() etc.
 
         // ── Telemetry ─────────────────────────────────────────────────────────
-        telemetryData.addData("X",             follower.getPose().getX());
-        telemetryData.addData("Y",             follower.getPose().getY());
-        telemetryData.addData("Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
-        telemetryData.addData("Distance",      distanceToGoal);
-        telemetryData.addData("Heading Error", headingError);
-        telemetryData.addData("Heading Lock",  headingLock);
-        telemetryData.addData("Flywheel Vel",  robot.flywheel.getVelocity());
-        telemetryData.addData("Flywheel Target", robot.flywheel.getTargetVelocity());
-        telemetryData.addData("Flywheel Ready",  robot.flywheel.atTarget());
-        telemetryData.addData("Intake State",    Intake.motorState);
-        telemetryData.addData("Alliance",        ALLIANCE_COLOR);
+        telemetryM.addData("X",             follower.getPose().getX());
+        telemetryM.addData("Y",             follower.getPose().getY());
+        telemetryM.addData("Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
+        telemetryM.addData("Distance",      distanceToGoal);
+        telemetryM.addData("Heading Error", headingError);
+        telemetryM.addData("Heading Lock",  headingLock);
+        telemetryM.addData("Flywheel Vel",  robot.flywheel.getVelocity());
+        telemetryM.addData("Flywheel Target", robot.flywheel.getTargetVelocity());
+        telemetryM.addData("Flywheel Ready",  robot.flywheel.atTarget());
+        telemetryM.addData("Intake State",    Intake.motorState);
+        telemetryM.addData("Alliance",        ALLIANCE_COLOR);
 
         // Runs CommandScheduler (calls periodic() on all subsystems) + flushes telemetry
-        robot.updateLoop(telemetryData);
+        robot.updateLoop(telemetryM);
     }
 
     // ─── end() ────────────────────────────────────────────────────────────────

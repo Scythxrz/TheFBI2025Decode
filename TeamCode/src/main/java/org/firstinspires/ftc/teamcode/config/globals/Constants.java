@@ -1,13 +1,13 @@
 package org.firstinspires.ftc.teamcode.config.globals;
 
-import com.acmerobotics.dashboard.config.Config;
+import com.bylazar.configurables.annotations.Configurable;
 import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 /**
  * Central constants file — all tunable values live here.
  * @Config exposes every public static field to FTC Dashboard for live tuning.
  */
-@Config
+@Configurable
 public class Constants {
 
     // ─── Op Mode Type ─────────────────────────────────────────────────────────
