@@ -10,12 +10,12 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 /**
  * Conveyor subsystem — controls the belt motor and gate servo that
  * feed balls from the intake into the flywheel.
- *
+ *<p>
  * Feeding sequence:
  *   1. Gate servo opens (STOPPER_OPEN)
  *   2. After CONVEYOR_FEED_DELAY_MS, belt motor spins
  *   3. Balls roll into the flywheel
- *
+ *<p>
  * Stopping:
  *   Belt off, gate closes (STOPPER_CLOSED)
  */

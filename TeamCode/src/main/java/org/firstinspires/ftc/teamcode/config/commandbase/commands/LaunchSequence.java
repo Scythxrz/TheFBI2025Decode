@@ -9,35 +9,35 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * LaunchSequence — TeleOp shooting command, bound to a held button.
- *
+ *<p>
  * Runs until the button is released (isFinished always returns false).
  * The operator holds the button; this command fires as many balls as come
  * through while the button is held and conditions are met.
- *
+ <p>
  * ── Firing modes ──────────────────────────────────────────────────────────────
- *
+ *<p>
  *   RAPID (default — bind to Y)
  *     Gate opens once flywheel + heading are ready and stays open.
  *     Balls pass through continuously with no pause between shots.
  *     If heading or flywheel drops out, the gate closes until they recover.
  *     Use for close-range where the flywheel recovers between balls fast enough.
- *
+ *<p>
  *   PACED (bind to A or RB)
  *     Gate closes after each detected ball and waits for flywheel to recover
  *     back to target speed before reopening.
  *     Use for far shots where velocity sag between balls would hurt accuracy.
- *
+ *<p>
  * ── No ball-count timeout in TeleOp ──────────────────────────────────────────
  *   Unlike auto, there's no ball-count limit or global timeout here — the
  *   operator controls duration by holding/releasing the button. The command
  *   simply keeps firing until the button is released.
- *
+ *<p>
  * ── Usage (in TeleOp initialize()) ───────────────────────────────────────────
  *   // Rapid — hold Y
  *   operator.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
  *       new LaunchSequence(() -> distanceToGoal, () -> headingError)
  *   );
- *
+ *<p>
  *   // Paced — hold A
  *   operator.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
  *       new LaunchSequence(() -> distanceToGoal, () -> headingError, FiringMode.PACED)

@@ -15,20 +15,20 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 /**
  * WindUpAndDrive — drives a path while spinning the flywheel up to speed.
  * The conveyor stays closed the entire time — no feeding happens here.
- *
+ *<p>
  * Heading modes (same as DriveToPose):
  *   LINEAR         — interpolates heading from start to end
  *   TANGENTIAL     — heading follows the curve direction
  *   TANGENTIAL_REV — tangential but reversed (robot drives backwards)
- *
+ *<p>
  * Usage examples:
- *
+ *<p>
  *   // Straight line, linear heading, explicit velocity
  *   new WindUpAndDrive(follower, Poses.PGP_COLLECT, 1850)
- *
+ *<p>
  *   // Tangential heading, slow collect speed
  *   new WindUpAndDrive(follower, Poses.PGP_COLLECT, 1850, HeadingMode.TANGENTIAL, 0.6)
- *
+ *<p>
  *   // Drive backwards (reversed tangential), velocity from distance LUT
  *   new WindUpAndDrive(follower, Poses.SCORE_CLOSE, Poses.SCORE_CLOSE, isBlue,
  *                      HeadingMode.TANGENTIAL_REV, 1.0)

@@ -11,24 +11,24 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * MoveAndShoot — drives the path while winding up, then fires after path is done.
- *
+ *<p>
  * Unlike ShootWhileMoving, feeding does NOT begin until the path finishes.
  * Use this when you need the robot at the exact target pose before firing
  * (e.g. far-zone shots where heading precision matters).
- *
+ *<p>
  * Same FiringMode and global feeding timeout as ShootWhileMoving:
- *
+ *<p>
  *   RAPID (default) — gate stays open between balls, counts detections continuously.
  *   PACED           — gate closes after each ball, waits for flywheel recovery.
- *
+ *<p>
  *   FEEDING_TIMEOUT_MS — single global timer that starts when feeding first begins.
  *     If it expires before all balls are counted (e.g. only 2 loaded when 3 expected),
  *     the command finishes and auto continues. One timer for the whole sequence.
- *
+ *<p>
  * ── Usage ─────────────────────────────────────────────────────────────────────
  *   // Rapid fire after arriving (default):
  *   new MoveAndShoot(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
- *
+ *<p>
  *   // Paced fire after arriving (far zone):
  *   new MoveAndShoot(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
  */

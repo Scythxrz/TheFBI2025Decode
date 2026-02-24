@@ -26,7 +26,30 @@ import java.io.FileReader;
 import java.util.Objects;
 
 /**
- * Main TeleOp
+ * Main TeleOp OpMode — driver + operator control with optional heading-lock aimbot.
+ *<p>
+ * ── Gamepad layout ────────────────────────────────────────────────────────────
+ *<p>
+ *   Driver (gamepad1):
+ *     Left stick        — strafe / drive (field-relative, inverted for Red)
+ *     Right stick X     — manual turn (disabled when heading lock is active)
+ *     LB                — toggle heading lock (auto-aim toward goal)
+ *     RB                — reset pose to Blue side reset position
+ *     Y                 — reset pose to Red side reset position
+ *     B                 — teleport pose to park position
+ *<p>
+ *   Operator (gamepad2):
+ *     Y (hold)          — RAPID fire: gate stays open, fires continuously
+ *     A (hold)          — PACED fire: gate closes between balls for flywheel recovery
+ *     X (hold)          — intake forward
+ *     B (hold)          — intake reverse
+ *<p>
+ * ── Init menu ─────────────────────────────────────────────────────────────────
+ *   DPAD up/down on gamepad1 — cycle Blue / Red alliance selection before start
+ *<p>
+ * ── Pose handoff ──────────────────────────────────────────────────────────────
+ *   On first run(), loads the end pose written by Auto from /sdcard/FIRST/pose.txt
+ *   so localization continues from where Auto left off.
  */
 @Configurable
 @TeleOp(name = "TeleOp", group = "AAATeleOp")
@@ -45,14 +68,14 @@ public class Teleop extends CommandOpMode {
     // ─── Telemetry ────────────────────────────────────────────────────────────
     private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
-    // ─── Aim / heading state (replicated from fbiTele2.handleGamepad2) ────────
+    // ─── Aim / heading state ──────────────────────────────────────────────────
     private int      invert         = -1; // -1 = Blue, 1 = Red
     private double   headingError   = 0;
     private double   distanceToGoal = 0;
     private boolean  headingLock    = false;
     private double[] goalPose       = GOAL_POSE_BLUE;
 
-    // Heading PID for aimbot (same gains as FBI2025)
+    // Heading PIDF controller for aimbot — tune kP in Constants if tracking feels sluggish or oscillates
     private final PIDFController headingController =
             new PIDFController(new com.pedropathing.control.PIDFCoefficients(1, 0, 0, 0.025));
 

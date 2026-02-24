@@ -14,6 +14,24 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
+/**
+ * PedroConstants — configures the Pedro Pathing follower for this robot.
+ *<p>
+ * To use, call PedroConstants.createFollower(hardwareMap) from your OpMode.
+ * All values here were empirically tuned for the current drivetrain and field.
+ *<p>
+ * ── What to tune ──────────────────────────────────────────────────────────────
+ *   followerConstants  — PID gains, mass, zero-power deceleration rates
+ *   driveConstants     — motor names and measured max velocities (xVelocity / yVelocity)
+ *   localizerConstants — pod offsets from robot center, encoder directions
+ *   pathConstraints    — global max velocity and acceleration for path following
+ *<p>
+ * ── Localizer ─────────────────────────────────────────────────────────────────
+ *   Currently configured for GoBilda Pinpoint (pinpointLocalizer).
+ *   A commented-out ThreeWheelConstants block is preserved below as a reference
+ *   if you switch back to three dead-wheel odometry — copy those values in and
+ *   swap .pinpointLocalizer() for .threeWheelLocalizer() in createFollower().
+ */
 public class PedroConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
             .mass(13.75)
@@ -47,22 +65,13 @@ public class PedroConstants {
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
             .forwardEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED)
             .strafeEncoderDirection(GoBildaPinpointDriver.EncoderDirection.REVERSED);
-    /*public static ThreeWheelConstants localizerConstants = new ThreeWheelConstants()
-            .forwardTicksToInches(0.001998609319033308)//0.001988829304)
-            .strafeTicksToInches(0.001985728701)
-            .turnTicksToInches(0.00197127806089664)
-            .leftPodY(3.125)
-            .rightPodY(-3.125)
-            .strafePodX(-2.375)
-            .leftEncoder_HardwareMapName("rf")
-            .rightEncoder_HardwareMapName("lr")
-            .strafeEncoder_HardwareMapName("lf")
-            .leftEncoderDirection(Encoder.FORWARD)
-            .rightEncoderDirection(Encoder.REVERSE)
-            .strafeEncoderDirection(Encoder.FORWARD);
-            //.IMU_HardwareMapName("imu")
-            //.IMU_Orientation(new RevHubOrientationOnRobot(RevHubOrientationOnRobot.LogoFacingDirection.FORWARD, RevHubOrientationOnRobot.UsbFacingDirection.RIGHT));
-*/
+    /**
+     * Builds and returns a fully configured Pedro Pathing Follower.
+     * Call this once in your OpMode's initialize() and store the result.
+     *
+     * @param hardwareMap the OpMode's hardwareMap
+     * @return a ready-to-use Follower with mecanum drivetrain + Pinpoint localizer
+     */
     public static Follower createFollower(HardwareMap hardwareMap) {
         return new FollowerBuilder(followerConstants, hardwareMap)
                 .pathConstraints(pathConstraints)

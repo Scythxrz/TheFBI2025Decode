@@ -32,25 +32,25 @@ import java.io.IOException;
 
 /**
  * Main Autonomous OpMode.
- *
+ *<p>
  * All poses come from Poses.java — nothing is hardcoded here.
- *
+ *<p>
  * Three helper methods cover every motion type:
- *
+ *<p>
  *   windUpAndDrive(to, vel, speed)
  *     → drives a path while flywheel spins up, conveyor closed
- *
+ *<p>
  *   shootWhileMoving(to, balls, vel)
  *     → drives a path while flywheel fires mid-path (assumes flywheel already warm)
- *
+ *<p>
  *   intakePath(mid, collect, speed)
  *     → drives to mid then slows to collect with intake running
- *
+ *<p>
  * Typical pattern for a full scoring cycle:
- *
+ *<p>
  *   windUpAndDrive(PGP_COLLECT, 1850, 0.6)    // collecting, flywheel warming
  *   shootWhileMoving(SCORE_CLOSE, 2, 1850)     // driving back, fires en route
- *
+ *<p>
  * Init-loop menu:
  *   DPAD up/down   — cycle sequence
  *   DPAD left      — toggle alliance (Blue / Red)

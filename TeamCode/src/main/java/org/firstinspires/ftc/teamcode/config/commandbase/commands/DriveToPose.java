@@ -10,25 +10,25 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 
 /**
  * DriveToPose — drives to a target pose and finishes when Pedro reports !isBusy().
- *
+ *<p>
  * Always pair with .withTimeout(ms) so a failed path can't freeze auto.
- *
+ *<p>
  * Heading modes:
  *   LINEAR         — interpolates heading from start to end
  *   TANGENTIAL     — heading follows the curve direction
  *   TANGENTIAL_REV — tangential but reversed (robot drives backwards along the path)
- *
+ *<p>
  * Usage examples:
- *
+ *<p>
  *   // Straight line, linear heading, full speed
  *   new DriveToPose(follower, Poses.SCORE_CLOSE)
- *
+ *<p>
  *   // Straight line, tangential heading
  *   new DriveToPose(follower, Poses.SCORE_CLOSE, HeadingMode.TANGENTIAL)
- *
+ *<p>
  *   // Straight line, reversed tangential (drive backwards), 0.6 speed
  *   new DriveToPose(follower, Poses.SCORE_CLOSE, HeadingMode.TANGENTIAL_REV, 0.6)
- *
+ *<p>
  *   // Bezier curve through waypoints, tangential heading
  *   new DriveToPose(follower, new Pose[]{Poses.PGP_MID, Poses.PGP_COLLECT}, HeadingMode.TANGENTIAL)
  */
