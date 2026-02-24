@@ -11,61 +11,85 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * ShootWhileMoving — fires balls while the robot is still driving the path.
- *
- * The flywheel spins up immediately, and as soon as it hits target velocity
- * the conveyor opens — no waiting for the path to finish first.
- * The path continues in the background the whole time.
- *
- * State machine:
- *   DRIVING_AND_SPINNING  — path running, flywheel warming up, waiting for atTarget()
- *   FEEDING               — flywheel ready, conveyor open, counting ball detections
- *   DONE                  — all balls fired (path may still be finishing — that's fine)
- *
- * The command finishes when all balls are fired AND the path is done.
- * If the path finishes before all balls are fired, feeding continues until done.
- * If all balls fire before the path ends, the robot keeps driving to the target
- * (useful when the shoot pose is a waypoint, not a stop).
- *
- * Usage:
- *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 1, isBlue).withTimeout(3000)
- *
- *   // Explicit velocity override (skip distance LUT):
- *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue).withTimeout(4000)
+ *<p>
+ * Flywheel spins up immediately. As soon as it hits target velocity (or spin-up
+ * times out), the conveyor opens and balls are fired mid-path.
+ *<p>
+ * ── Firing modes ──────────────────────────────────────────────────────────────
+ *<p>
+ *   RAPID (default)
+ *     Gate opens once and stays open. Ball detections are counted continuously
+ *     with no pause between shots. Use for close-range where the flywheel
+ *     recovers fast enough without needing a break.
+ *<p>
+ *   PACED
+ *     Gate closes after each detected ball, waits for flywheel to recover back
+ *     to target speed, then reopens. Use for far shots where velocity sag hurts.
+ *<p>
+ * ── Global feeding timeout ────────────────────────────────────────────────────
+ *   A single timer starts the moment feeding begins. If the timer expires before
+ *   all balls are counted (e.g. only 2 loaded when 3 expected), the command
+ *   finishes immediately — auto never stalls. The timer covers the ENTIRE feeding
+ *   sequence, not just each individual ball.
+ *<p>
+ *   FEEDING_TIMEOUT_MS — how long total feeding can last before giving up.
+ *<p>
+ * ── Usage ─────────────────────────────────────────────────────────────────────
+ *   // Rapid fire, distance LUT:
+ *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, isBlue)
+ *<p>
+ *   // Rapid fire, explicit velocity:
+ *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
+ *<p>
+ *   // Paced fire (far zone):
+ *   new ShootWhileMoving(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
  */
 public class ShootWhileMoving extends CommandBase {
 
-    private enum State { DRIVING_AND_SPINNING, FEEDING, DONE }
+    public enum FiringMode { RAPID, PACED }
+
+    private enum State { SPINNING, FEEDING, RECOVERING, DONE }
     private State state;
 
-    private final Follower follower;
-    private final Pose     targetPose;
-    private final int      ballsToFire;
-    private final double   overrideVelocity; // -1 = use distance LUT
-    private final boolean  isBlue;
+    private final Follower   follower;
+    private final Pose       targetPose;
+    private final int        ballsToFire;
+    private final double     overrideVelocity;
+    private final boolean    isBlue;
+    private final FiringMode firingMode;
 
-    // How long to wait for flywheel to reach speed before firing anyway (ms)
-    // Set high enough that a sag-y battery doesn't cause early misfires
+    // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
+    // ms for the ENTIRE feeding sequence — if this expires, move on regardless of shot count
+    private static final long FEEDING_TIMEOUT_MS = 3000;
 
     private final Robot robot = Robot.getInstance();
-    private int  shotsFired  = 0;
-    private long spinUpStart = 0;
+    private int  shotsFired    = 0;
+    private long spinUpStart   = 0;
+    private long feedingStart  = 0; // global timer — starts when feeding first begins
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
-    /** Distance LUT velocity. */
+    /** Rapid fire, distance LUT velocity. */
     public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire, boolean isBlue) {
-        this(follower, targetPose, ballsToFire, -1, isBlue);
+        this(follower, targetPose, ballsToFire, -1, isBlue, FiringMode.RAPID);
     }
 
-    /** Explicit velocity override (ticks/s). */
+    /** Rapid fire, explicit velocity. */
     public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
                             double overrideVelocity, boolean isBlue) {
+        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID);
+    }
+
+    /** Explicit velocity + firing mode. */
+    public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
+                            double overrideVelocity, boolean isBlue, FiringMode firingMode) {
         this.follower         = follower;
         this.targetPose       = targetPose;
         this.ballsToFire      = ballsToFire;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
+        this.firingMode       = firingMode;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -73,14 +97,13 @@ public class ShootWhileMoving extends CommandBase {
 
     @Override
     public void initialize() {
-        shotsFired  = 0;
-        spinUpStart = System.currentTimeMillis();
-        state       = State.DRIVING_AND_SPINNING;
+        shotsFired   = 0;
+        spinUpStart  = System.currentTimeMillis();
+        feedingStart = 0; // not started yet — set when we first enter FEEDING
+        state        = State.SPINNING;
 
-        // Spin up immediately
         spinUpFlywheel();
 
-        // Start the path — robot begins moving right away
         PathChain path = follower.pathBuilder()
                 .addPath(new BezierLine(follower.getPose(), targetPose))
                 .setLinearHeadingInterpolation(follower.getPose().getHeading(), targetPose.getHeading())
@@ -92,59 +115,71 @@ public class ShootWhileMoving extends CommandBase {
 
     @Override
     public void execute() {
-        // Always keep flywheel target fresh as distance changes mid-drive
         spinUpFlywheel();
+
+        // Global feeding timeout — if we've been feeding too long, just stop
+        if (feedingStart > 0 && System.currentTimeMillis() - feedingStart > FEEDING_TIMEOUT_MS) {
+            robot.conveyor.stop();
+            robot.flywheel.off();
+            state = State.DONE;
+            return;
+        }
 
         switch (state) {
 
-            case DRIVING_AND_SPINNING:
-                boolean flywheelReady = robot.flywheel.atTarget();
-                boolean timedOut      = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
+            case SPINNING:
+                boolean ready    = robot.flywheel.atTarget();
+                boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
 
-                // Fire as soon as flywheel is ready — don't wait for path to end
-                if (flywheelReady || timedOut) {
+                if (ready || timedOut) {
+                    feedingStart = System.currentTimeMillis(); // global timer starts NOW
                     robot.conveyor.feed();
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                // Keep flywheel happy during feeding
                 if (robot.flywheel.ballDetected()) {
-                    robot.conveyor.stop();
                     shotsFired++;
 
-                    if (shotsFired < ballsToFire) {
-                        // Brief recovery window — reopen conveyor on next flywheel-ready tick
-                        state       = State.DRIVING_AND_SPINNING;
-                        spinUpStart = System.currentTimeMillis();
-                    } else {
+                    if (shotsFired >= ballsToFire) {
+                        robot.conveyor.stop();
                         robot.flywheel.off();
                         state = State.DONE;
+                    } else if (firingMode == FiringMode.PACED) {
+                        // Close gate and wait for flywheel recovery
+                        robot.conveyor.stop();
+                        spinUpStart = System.currentTimeMillis();
+                        state = State.RECOVERING;
                     }
+                    // RAPID: gate stays open, keep counting — global timer handles stuck-ball case
+                }
+                break;
+
+            case RECOVERING:
+                boolean recovered   = robot.flywheel.atTarget();
+                boolean recTimedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
+
+                if (recovered || recTimedOut) {
+                    robot.conveyor.feed();
+                    state = State.FEEDING;
                 }
                 break;
 
             case DONE:
-                // Path may still be running — let it finish naturally
                 break;
         }
     }
 
     @Override
     public boolean isFinished() {
-        // Done when all balls are fired AND the path has completed
         return state == State.DONE && !follower.isBusy();
     }
 
     @Override
     public void end(boolean interrupted) {
         robot.conveyor.stop();
-        if (interrupted) {
-            robot.flywheel.off();
-        }
-        // If not interrupted, leave flywheel running so the next shot
-        // can fire faster — caller can .off() it when ready
+        if (interrupted) robot.flywheel.off();
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

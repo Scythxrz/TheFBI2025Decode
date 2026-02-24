@@ -5,7 +5,6 @@ import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
-import com.qualcomm.robotcore.hardware.AnalogInput;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -14,7 +13,6 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.seattlesolvers.solverslib.command.CommandScheduler;
 import com.seattlesolvers.solverslib.hardware.motors.MotorEx;
 import com.seattlesolvers.solverslib.hardware.motors.Motor;
-import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Conveyor;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Flywheel;
@@ -24,9 +22,16 @@ import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import java.util.List;
 
 /**
- * Singleton Robot class — owns all hardware, instantiates all subsystems.
+ * Singleton Robot class — owns all hardware and instantiates all subsystems.
+ * <p>
  * Subsystems access hardware via Robot.getInstance() rather than holding
- * their own HardwareMap references, matching the Decode 2026 architecture.
+ * their own HardwareMap references, keeping hardware initialization centralized.
+ *<p>
+ * Usage:
+ *   Robot robot = Robot.getInstance();
+ *   robot.init(hardwareMap);          // call once in OpMode initialize()
+ *   robot.updateLoop(telemetryM);     // call every loop() iteration
+ *   robot.getVoltage();               // cached battery voltage for compensation
  */
 public class Robot extends com.seattlesolvers.solverslib.command.Robot {
 
@@ -37,7 +42,7 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
 
     // ─── Hardware ─────────────────────────────────────────────────────────────
 
-    // Drive motors (Mecanum — names match FBI2025 Constants)
+    // Drive motors (Mecanum — names must match PedroConstants driveConstants motor names)
     public MotorEx rf, rr, lf, lr;
 
     // Shooting mechanism

@@ -10,10 +10,17 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * Flywheel subsystem — controls the shooter motor via PIDF velocity control.
- *
- * Hardware lives in Robot.getInstance(); this subsystem just calls setVelocity()
+ *<p>
+ * Hardware lives in Robot.getInstance(); this subsystem calls setVelocity()
  * and reads back encoder ticks each periodic() tick via the CommandScheduler.
- * Shooter / Flywheel classes and is still tunable via Constants.SHOOTER_LUT.
+ * Target velocity and PIDF gains are tunable via Constants.java and FTC Dashboard.
+ *<p>
+ * Usage:
+ *   robot.flywheel.setVelocity(1850);             // spin up to exact ticks/s
+ *   robot.flywheel.setVelocityForDistance(72.0);  // use shooter LUT for distance
+ *   robot.flywheel.atTarget();                    // true when within tolerance
+ *   robot.flywheel.ballDetected();                // true on velocity-drop detection
+ *   robot.flywheel.off();                         // stop the motor
  */
 public class Flywheel extends SubsystemBase {
 
@@ -49,7 +56,8 @@ public class Flywheel extends SubsystemBase {
     public void setVelocityForDistance(double distanceInches) {
         double vel = velocityFromLUT(distanceInches);
         double voltage = robot.getVoltage();
-        // Partial voltage compensation (matches FBI2025 formula)
+        // Partial voltage compensation: full correction would over-power at high voltage,
+        // so VOLTAGE_COMP_FACTOR (default 0.5) blends between raw and fully compensated.
         double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
         setVelocity(compensated);
     }
@@ -104,8 +112,8 @@ public class Flywheel extends SubsystemBase {
     }
 
     // ─── Periodic ─────────────────────────────────────────────────────────────
-    // No continuous update needed here; velocity is set imperatively.
-    // If you add a software PIDF loop (like Decode 2026's Launcher), put it here.
+    // Velocity is set imperatively via setVelocity() calls — no continuous update needed here.
+    // Add a software PIDF loop in periodic() if you want closed-loop correction on every tick.
     @Override
     public void periodic() { }
 

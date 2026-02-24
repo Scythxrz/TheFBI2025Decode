@@ -4,10 +4,10 @@ import com.pedropathing.geometry.Pose;
 
 /**
  * Central pose library — every field coordinate used in Auto lives here.
- *
+ *<p>
  * All poses are defined for BLUE alliance.
  * Call Poses.forAlliance(pose) to automatically mirror for Red.
- *
+ *<p>
  * Naming convention:
  *   <SEQUENCE>_<ROLE>_<CONTROL>  e.g. PGP_COLLECT, GATE_PUSH, CLOSE_PGP_1, FAR_SCORE
  *
@@ -56,7 +56,7 @@ public class Poses {
     /**
      * Returns the pose mirrored for Red alliance if needed.
      * Blue poses are defined with x from the Blue side; Red mirrors across x = 72.
-     *
+     *<p>
      * Usage:
      *   Pose shoot = Poses.forAlliance(Poses.SCORE_CLOSE, isBlue);
      */

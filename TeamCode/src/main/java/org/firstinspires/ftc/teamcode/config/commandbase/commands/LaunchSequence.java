@@ -8,80 +8,141 @@ import org.firstinspires.ftc.teamcode.config.globals.Constants;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
- * Full launch sequence:
- *   1. Waits until the flywheel is at target velocity AND heading is settled.
- *   2. Opens the conveyor to feed a ball through.
- *   3. Detects the ball passing (velocity drop) and stops feeding.
- *
- * This is the command-based equivalent of FBI2025's handleGamepad2() shooting logic.
- * Bind it to a button with whenHeld() or whenPressed().
- *
- * Usage:
- *   operator.getGamepadButton(GamepadKeys.Button.Y)
- *       .whileActiveContinuous(new LaunchSequence(() -> distanceToGoal, () -> headingError));
+ * LaunchSequence — TeleOp shooting command, bound to a held button.
+ *<p>
+ * Runs until the button is released (isFinished always returns false).
+ * The operator holds the button; this command fires as many balls as come
+ * through while the button is held and conditions are met.
+ <p>
+ * ── Firing modes ──────────────────────────────────────────────────────────────
+ *<p>
+ *   RAPID (default — bind to Y)
+ *     Gate opens once flywheel + heading are ready and stays open.
+ *     Balls pass through continuously with no pause between shots.
+ *     If heading or flywheel drops out, the gate closes until they recover.
+ *     Use for close-range where the flywheel recovers between balls fast enough.
+ *<p>
+ *   PACED (bind to A or RB)
+ *     Gate closes after each detected ball and waits for flywheel to recover
+ *     back to target speed before reopening.
+ *     Use for far shots where velocity sag between balls would hurt accuracy.
+ *<p>
+ * ── No ball-count timeout in TeleOp ──────────────────────────────────────────
+ *   Unlike auto, there's no ball-count limit or global timeout here — the
+ *   operator controls duration by holding/releasing the button. The command
+ *   simply keeps firing until the button is released.
+ *<p>
+ * ── Usage (in TeleOp initialize()) ───────────────────────────────────────────
+ *   // Rapid — hold Y
+ *   operator.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
+ *       new LaunchSequence(() -> distanceToGoal, () -> headingError)
+ *   );
+ *<p>
+ *   // Paced — hold A
+ *   operator.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
+ *       new LaunchSequence(() -> distanceToGoal, () -> headingError, FiringMode.PACED)
+ *   );
  */
 public class LaunchSequence extends CommandBase {
 
+    public enum FiringMode { RAPID, PACED }
+
     public interface DoubleSupplier { double get(); }
+
+    private enum State { WAITING, FEEDING, RECOVERING }
+    private State state;
 
     private final DoubleSupplier distanceSupplier;
     private final DoubleSupplier headingErrorSupplier;
+    private final FiringMode     firingMode;
 
-    private final Robot robot = Robot.getInstance();
+    private final Robot    robot;
     private final Flywheel flywheel;
     private final Conveyor conveyor;
 
-    private boolean feeding = false;
-    private long shotTime   = 0;
+    private long spinUpStart = 0;
+    private static final long SPIN_UP_TIMEOUT_MS = 2000;
 
-    /**
-     * @param distanceSupplier      lambda that returns current distance to goal in inches
-     * @param headingErrorSupplier  lambda that returns current heading error in radians
-     */
+    // ─── Constructors ─────────────────────────────────────────────────────────
+
+    /** Rapid fire (default). */
     public LaunchSequence(DoubleSupplier distanceSupplier, DoubleSupplier headingErrorSupplier) {
+        this(distanceSupplier, headingErrorSupplier, FiringMode.RAPID);
+    }
+
+    /** Explicit firing mode. */
+    public LaunchSequence(DoubleSupplier distanceSupplier, DoubleSupplier headingErrorSupplier,
+                          FiringMode firingMode) {
         this.distanceSupplier     = distanceSupplier;
         this.headingErrorSupplier = headingErrorSupplier;
+        this.firingMode           = firingMode;
 
+        robot    = Robot.getInstance();
         flywheel = robot.flywheel;
         conveyor = robot.conveyor;
 
         addRequirements(flywheel, conveyor);
     }
 
+    // ─── Lifecycle ────────────────────────────────────────────────────────────
+
     @Override
     public void initialize() {
-        feeding  = false;
-        shotTime = 0;
-        // Spin up to the correct velocity for current distance
+        state        = State.WAITING;
+        spinUpStart  = System.currentTimeMillis();
         flywheel.setVelocityForDistance(distanceSupplier.get());
     }
 
     @Override
     public void execute() {
-        // Keep updating flywheel target as robot moves
+        // Always keep flywheel target fresh
         flywheel.setVelocityForDistance(distanceSupplier.get());
 
         boolean flywheelReady  = flywheel.atTarget();
         boolean headingSettled = Math.abs(headingErrorSupplier.get()) < Constants.AIM_ANGLE_TOLERANCE;
+        boolean spinTimedOut   = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
+        boolean readyToFire    = (flywheelReady && headingSettled) || spinTimedOut;
 
-        if (flywheelReady && headingSettled) {
-            if (!feeding) {
-                feeding  = true;
-                shotTime = System.currentTimeMillis();
-                conveyor.feed();
-            }
-        } else {
-            if (feeding) {
-                // Heading or flywheel lost — stop feeding and wait for recovery
-                conveyor.stop();
-                feeding = false;
-            }
-        }
+        switch (state) {
 
-        // Stop feeding after a ball has passed (detected by velocity drop)
-        if (feeding && flywheel.ballDetected()) {
-            conveyor.stop();
-            feeding = false;
+            case WAITING:
+                if (readyToFire) {
+                    conveyor.feed();
+                    state = State.FEEDING;
+                }
+                break;
+
+            case FEEDING:
+                if (!readyToFire && !spinTimedOut) {
+                    // Lost heading or flywheel — close gate and wait for recovery
+                    conveyor.stop();
+                    spinUpStart = System.currentTimeMillis();
+                    state = State.WAITING;
+                    break;
+                }
+
+                if (flywheel.ballDetected()) {
+                    if (firingMode == FiringMode.PACED) {
+                        // Close gate, wait for flywheel recovery before next ball
+                        conveyor.stop();
+                        spinUpStart = System.currentTimeMillis();
+                        state = State.RECOVERING;
+                    }
+                    // RAPID: gate stays open — next ball feeds immediately
+                }
+                break;
+
+            case RECOVERING:
+                if (flywheel.atTarget() || System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS) {
+                    // Flywheel recovered — reopen for next ball
+                    if (readyToFire) {
+                        conveyor.feed();
+                        state = State.FEEDING;
+                    } else {
+                        state = State.WAITING;
+                    }
+                }
+                break;
         }
     }
 
@@ -89,12 +150,11 @@ public class LaunchSequence extends CommandBase {
     public void end(boolean interrupted) {
         conveyor.stop();
         flywheel.off();
-        feeding = false;
     }
 
     @Override
     public boolean isFinished() {
-        // Run until the button is released (whileActiveContinuous) or cancelled
+        // Never finishes on its own — button release cancels it
         return false;
     }
 }

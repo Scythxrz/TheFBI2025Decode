@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 /**
  * Central constants file — all tunable values live here.
- * @Config exposes every public static field to FTC Dashboard for live tuning.
+ * @Configurable exposes every public static field to Panels for live tuning.
  */
 @Configurable
 public class Constants {
@@ -45,7 +45,8 @@ public class Constants {
     public static double VOLTAGE_COMP_FACTOR = 0.5;
 
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
-    // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
+    // Add or adjust rows to tune velocity vs. distance for your field setup.
+    // Used by Flywheel.setVelocityForDistance() and WindUpAndDrive's LUT constructors.
     public static final double[][] SHOOTER_LUT = {
             {50.45,   1650},
             {60.2258, 1700},

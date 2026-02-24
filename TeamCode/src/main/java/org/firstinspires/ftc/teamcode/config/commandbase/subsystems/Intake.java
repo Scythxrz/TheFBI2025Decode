@@ -7,12 +7,18 @@ import com.seattlesolvers.solverslib.command.SubsystemBase;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
- * Intake subsystem — controls the intake motor.
- *
- * In FBI2025, Intake.java also drove the conveyor during intaking.
- * In this architecture the conveyor is its own subsystem, so Intake
- * only manages the intake roller itself.  Coordinating intake + conveyor
- * during feeding is handled by commands (see commands/ package).
+ * Intake subsystem — controls the intake roller motor.
+ *<p>
+ * This subsystem only manages the intake motor itself. Coordinating intake
+ * with the conveyor during feeding is handled at the command level
+ * (see commands/ package, e.g. SetIntake and intakePath in Auton).
+ *<p>
+ * Usage:
+ *   robot.intake.forward();                        // start intake
+ *   robot.intake.reverse();                        // reverse to eject
+ *   robot.intake.stop();                           // stop
+ *   robot.intake.toggle();                         // toggle forward/stop
+ *   new SetIntake(Intake.MotorState.FORWARD)       // command-based version
  */
 public class Intake extends SubsystemBase {
 
