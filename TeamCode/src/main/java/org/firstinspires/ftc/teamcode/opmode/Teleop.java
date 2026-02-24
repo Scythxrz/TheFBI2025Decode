@@ -13,7 +13,6 @@ import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
-import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.LaunchSequence;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
@@ -27,15 +26,7 @@ import java.io.FileReader;
 import java.util.Objects;
 
 /**
- * Main TeleOp — command-based port of FBI2025's fbiTele2.java.
- *
- * Key differences from the original:
- *   • Extends CommandOpMode instead of OpMode
- *   • Hardware lives in Robot singleton, subsystems extend SubsystemBase
- *   • Button bindings are declared once in initialize() via GamepadEx
- *   • The drive + aim loop is still in run() (Pedro Pathing requires per-loop updates)
- *   • Shooting is handled by LaunchSequence (whileActiveContinuous on Y/A)
- *   • Intake is handled by SetIntake instant commands
+ * Main TeleOp
  */
 @Configurable
 @TeleOp(name = "TeleOp", group = "AAATeleOp")
@@ -52,14 +43,14 @@ public class Teleop extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
 
     // ─── Telemetry ────────────────────────────────────────────────────────────
-    private TelemetryData telemetryData;
+    private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
 
     // ─── Aim / heading state (replicated from fbiTele2.handleGamepad2) ────────
-    private int     invert            = -1; // -1 = Blue, 1 = Red
-    private double  headingError      = 0;
-    private double  distanceToGoal    = 0;
-    private boolean headingLock       = false;
-    private double[] goalPose         = GOAL_POSE_BLUE;
+    private int      invert         = -1; // -1 = Blue, 1 = Red
+    private double   headingError   = 0;
+    private double   distanceToGoal = 0;
+    private boolean  headingLock    = false;
+    private double[] goalPose       = GOAL_POSE_BLUE;
 
     // Heading PID for aimbot (same gains as FBI2025)
     private final PIDFController headingController =
@@ -69,28 +60,22 @@ public class Teleop extends CommandOpMode {
     public static double[] RESET_BLUE = {32, 135, 270};
     public static double[] RESET_RED  = {12,   8,  90};
 
-    // Init telemetry
-    private TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
-
     // Park pose
     public static double[] PARK_POSE = {41.678, 29.632, 270};
 
     // ─── Alliance selection (init_loop menu) ──────────────────────────────────
     private final String[] options = {"Blue", "Red"};
-    private int  selectedOption    = 0;
+    private int     selectedOption = 0;
     private boolean upLast = false, downLast = false;
 
-    // ─── initialize() — called once when the OpMode is initialized ────────────
+    // ─── initialize() ─────────────────────────────────────────────────────────
 
     @Override
     public void initialize() {
-        // Wipe the scheduler from any previous run
         super.reset();
 
         OP_MODE_TYPE = OpModeType.TELEOP;
 
-
-        // Initialize all hardware and register subsystems with CommandScheduler
         robot.init(hardwareMap);
 
         driver   = new GamepadEx(gamepad1);
@@ -103,8 +88,7 @@ public class Teleop extends CommandOpMode {
                 new InstantCommand(() -> headingLock = !headingLock)
         );
 
-        // Auto-park — drives to park pose via Pedro heading + position lock
-        // Replace with a proper Pedro path if you have one tuned
+        // Auto-park
         driver.getGamepadButton(GamepadKeys.Button.B).whenPressed(
                 new InstantCommand(() -> {
                     if (follower != null) follower.setPose(toPose(PARK_POSE));
@@ -123,17 +107,17 @@ public class Teleop extends CommandOpMode {
 
         // ── Operator button bindings ────────────────────────────────────────
 
-        // Y — hold to fire (rapid-fire mode: feeds whenever flywheel + heading ready)
-        // A — hold to fire (paced mode, same command, LaunchSequence handles pacing internally)
+        // Y — RAPID fire (gate stays open between balls — close range)
         operator.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
-                new LaunchSequence(() -> distanceToGoal, () -> headingError)
+                new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.RAPID)
         );
 
+        // A — PACED fire (gate closes between balls for flywheel recovery — far range)
         operator.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
-                new LaunchSequence(() -> distanceToGoal, () -> headingError)
+                new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.PACED)
         );
 
-        // X — start intake
+        // X — intake forward
         operator.getGamepadButton(GamepadKeys.Button.X).whenPressed(
                 new SetIntake(Intake.MotorState.FORWARD)
         );
@@ -150,7 +134,7 @@ public class Teleop extends CommandOpMode {
         );
     }
 
-    // ─── initialize_loop() — shows alliance selector while waiting to start ───
+    // ─── initialize_loop() ────────────────────────────────────────────────────
 
     @Override
     public void initialize_loop() {
@@ -167,7 +151,7 @@ public class Teleop extends CommandOpMode {
         telemetry.update();
     }
 
-    // ─── run() — called repeatedly once the OpMode starts ────────────────────
+    // ─── run() ────────────────────────────────────────────────────────────────
 
     private boolean firstRun = true;
 
@@ -176,21 +160,19 @@ public class Teleop extends CommandOpMode {
         if (firstRun) {
             firstRun = false;
 
-            // Configure alliance-specific values
             boolean isBlue = Objects.equals(options[selectedOption], "Blue");
             if (isBlue) {
-                goalPose    = GOAL_POSE_BLUE;
-                invert      = -1;
+                goalPose       = GOAL_POSE_BLUE;
+                invert         = -1;
                 ALLIANCE_COLOR = AllianceColor.BLUE;
             } else {
-                goalPose    = GOAL_POSE_RED;
-                invert      = 1;
+                goalPose       = GOAL_POSE_RED;
+                invert         = 1;
                 ALLIANCE_COLOR = AllianceColor.RED;
-                RESET_BLUE  = mirrorArray(RESET_BLUE);
-                RESET_RED   = new double[]{132, 8, 90};
+                RESET_BLUE     = mirrorArray(RESET_BLUE);
+                RESET_RED      = new double[]{132, 8, 90};
             }
 
-            // Build Pedro follower and load starting pose from file
             follower = createFollower(hardwareMap);
             Pose startPose;
             try (BufferedReader reader = new BufferedReader(new FileReader("/sdcard/FIRST/pose.txt"))) {
@@ -216,11 +198,11 @@ public class Teleop extends CommandOpMode {
         distanceToGoal = Math.hypot(dx, dy);
         headingError   = normalizeAngle(Math.atan2(dy, dx) + Math.PI - follower.getPose().getHeading());
 
-        // ── Drive (only when no path-following command is active) ─────────────
+        // ── Drive ─────────────────────────────────────────────────────────────
         double turnPower;
         if (headingLock) {
             headingController.updateError(headingError);
-            double kV = -0.5;
+            double kV    = -0.5;
             double denom = dx * dx + dy * dy;
             double headingVelFF = denom > 1e-6
                     ? (dx * follower.getVelocity().getYComponent() - dy * follower.getVelocity().getXComponent()) / denom
@@ -237,24 +219,19 @@ public class Teleop extends CommandOpMode {
                 false
         );
 
-        // ── Limelight update ──────────────────────────────────────────────────
-        // (No subsystem for Limelight — update it directly here each loop)
-        // robot.limelight is available if you want to call getLatestResult() etc.
-
         // ── Telemetry ─────────────────────────────────────────────────────────
-        telemetryM.addData("X",             follower.getPose().getX());
-        telemetryM.addData("Y",             follower.getPose().getY());
-        telemetryM.addData("Heading (deg)", Math.toDegrees(follower.getPose().getHeading()));
-        telemetryM.addData("Distance",      distanceToGoal);
-        telemetryM.addData("Heading Error", headingError);
-        telemetryM.addData("Heading Lock",  headingLock);
-        telemetryM.addData("Flywheel Vel",  robot.flywheel.getVelocity());
+        telemetryM.addData("X",               follower.getPose().getX());
+        telemetryM.addData("Y",               follower.getPose().getY());
+        telemetryM.addData("Heading (deg)",   Math.toDegrees(follower.getPose().getHeading()));
+        telemetryM.addData("Distance",        distanceToGoal);
+        telemetryM.addData("Heading Error",   headingError);
+        telemetryM.addData("Heading Lock",    headingLock);
+        telemetryM.addData("Flywheel Vel",    robot.flywheel.getVelocity());
         telemetryM.addData("Flywheel Target", robot.flywheel.getTargetVelocity());
         telemetryM.addData("Flywheel Ready",  robot.flywheel.atTarget());
         telemetryM.addData("Intake State",    Intake.motorState);
         telemetryM.addData("Alliance",        ALLIANCE_COLOR);
 
-        // Runs CommandScheduler (calls periodic() on all subsystems) + flushes telemetry
         robot.updateLoop(telemetryM);
     }
 
