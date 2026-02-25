@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.CommandBase;
 
@@ -11,42 +12,44 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * ShootWhileMoving — fires balls while the robot is still driving the path.
- *<p>
+ *
  * Flywheel spins up immediately. As soon as it hits target velocity (or spin-up
  * times out), the conveyor opens and balls are fired mid-path.
- *<p>
+ *
  * ── Firing modes ──────────────────────────────────────────────────────────────
- *<p>
+ *
  *   RAPID (default)
  *     Gate opens once and stays open. Ball detections are counted continuously
  *     with no pause between shots. Use for close-range where the flywheel
  *     recovers fast enough without needing a break.
- *<p>
+ *
  *   PACED
  *     Gate closes after each detected ball, waits for flywheel to recover back
  *     to target speed, then reopens. Use for far shots where velocity sag hurts.
- *<p>
+ *
  * ── Global feeding timeout ────────────────────────────────────────────────────
  *   A single timer starts the moment feeding begins. If the timer expires before
  *   all balls are counted (e.g. only 2 loaded when 3 expected), the command
  *   finishes immediately — auto never stalls. The timer covers the ENTIRE feeding
  *   sequence, not just each individual ball.
- *<p>
+ *
  *   FEEDING_TIMEOUT_MS — how long total feeding can last before giving up.
- *<p>
+ *
  * ── Usage ─────────────────────────────────────────────────────────────────────
  *   // Rapid fire, distance LUT:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, isBlue)
- *<p>
+ *
  *   // Rapid fire, explicit velocity:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
- *<p>
+ *
  *   // Paced fire (far zone):
  *   new ShootWhileMoving(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
  */
 public class ShootWhileMoving extends CommandBase {
 
     public enum FiringMode { RAPID, PACED }
+
+    public enum HeadingMode { LINEAR, TANGENTIAL, TANGENTIAL_REV }
 
     private enum State { SPINNING, FEEDING, RECOVERING, DONE }
     private State state;
@@ -57,6 +60,7 @@ public class ShootWhileMoving extends CommandBase {
     private final double     overrideVelocity;
     private final boolean    isBlue;
     private final FiringMode firingMode;
+    private final HeadingMode headingMode;
 
     // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
@@ -81,15 +85,22 @@ public class ShootWhileMoving extends CommandBase {
         this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID);
     }
 
-    /** Explicit velocity + firing mode. */
+    /** Explicit velocity + firing mode, linear heading (default). */
     public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
                             double overrideVelocity, boolean isBlue, FiringMode firingMode) {
+        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, firingMode, HeadingMode.LINEAR);
+    }
+
+    /** Full constructor — explicit velocity, firing mode, and heading mode. */
+    public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
+                            double overrideVelocity, boolean isBlue, FiringMode firingMode, HeadingMode headingMode) {
         this.follower         = follower;
         this.targetPose       = targetPose;
         this.ballsToFire      = ballsToFire;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
         this.firingMode       = firingMode;
+        this.headingMode      = headingMode;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
