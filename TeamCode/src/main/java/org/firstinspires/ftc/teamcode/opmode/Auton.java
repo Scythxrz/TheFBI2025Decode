@@ -2,11 +2,11 @@ package org.firstinspires.ftc.teamcode.opmode;
 
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 import static org.firstinspires.ftc.teamcode.config.globals.Poses.*;
-import static org.firstinspires.ftc.teamcode.opmode.Tuning.draw;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
+import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -16,6 +16,7 @@ import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
@@ -85,8 +86,8 @@ public class Auton extends CommandOpMode {
         robot.init(hardwareMap);
         follower = PedroConstants.createFollower(hardwareMap);
         follower.setStartingPose(startPose());
-
-        schedule(buildSequence());
+        // Sequence is scheduled in run() on first tick — not here —
+        // so the flywheel doesn't spin up during init_loop
     }
 
     // ─── initialize_loop() ────────────────────────────────────────────────────
@@ -118,8 +119,8 @@ public class Auton extends CommandOpMode {
 
         if (changed) {
             super.reset();
+            sequenceScheduled = false; // re-schedule on next run() tick with updated selection
             follower.setStartingPose(startPose());
-            schedule(buildSequence());
         }
 
         telemetryM.addData("Alliance",  isBlue ? "BLUE" : "RED");
@@ -130,8 +131,15 @@ public class Auton extends CommandOpMode {
     }
 
     // ─── run() ────────────────────────────────────────────────────────────────
+    private boolean sequenceScheduled = false;
+
     @Override
     public void run() {
+        if (!sequenceScheduled) {
+            sequenceScheduled = true;
+            schedule(buildSequence());
+        }
+
         if (loopTimer == null) loopTimer = new ElapsedTime();
 
         follower.update();
@@ -144,7 +152,6 @@ public class Auton extends CommandOpMode {
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
-
     }
 
     // ─── end() ────────────────────────────────────────────────────────────────
@@ -167,29 +174,29 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildClose18() {
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shootWhileMoving(CLOSE_SCORE, 3, 1850, ShootWhileMoving.HeadingMode.TANGENTIAL_REV),
+                shootWhileMoving(CLOSE_SCORE, 3, 1850, ShootWhileMoving.HeadingMode.LINEAR),
                 // Intake PGP Spike Mark
-                intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
+                intakePath(new Pose[]{CLOSE_PGP_1, CLOSE_PGP}, 1),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                intakePath(new Pose[]{CLOSE_GATE_1, CLOSE_GATE}, 1),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                intakePath(new Pose[]{CLOSE_GATE_1, CLOSE_GATE}, 1),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
-                intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
+                intakePath(new Pose[]{CLOSE_PPG_1, CLOSE_PPG }, 1),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
-                intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
+                intakePath(new Pose[]{CLOSE_GPP_1, CLOSE_GPP}, 1),
                 // Drive to scoring position and shoot
-                windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
+                windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
                 moveAndShoot(CLOSE_END, 3, 1850)
         );
     }
@@ -216,7 +223,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         return new SequentialCommandGroup(
                 windUpAndDrive(CLOSE_TOSCORE, flywheelVel, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
-                moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.TANGENTIAL_REV)
+                moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
         );
     }
 
