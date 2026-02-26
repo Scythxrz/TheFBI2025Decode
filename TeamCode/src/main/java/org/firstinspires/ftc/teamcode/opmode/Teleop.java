@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.opmode;
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 
 import com.bylazar.configurables.annotations.Configurable;
+import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.control.PIDFController;
@@ -66,7 +67,7 @@ public class Teleop extends CommandOpMode {
     private final Robot robot = Robot.getInstance();
 
     // ─── Telemetry ────────────────────────────────────────────────────────────
-    private final TelemetryManager telemetryM = PanelsTelemetry.INSTANCE.getTelemetry();
+    private final JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
 
     // ─── Aim / heading state ──────────────────────────────────────────────────
     private int      invert         = -1; // -1 = Blue, 1 = Red

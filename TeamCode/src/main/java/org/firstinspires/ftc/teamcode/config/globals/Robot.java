@@ -2,6 +2,7 @@ package org.firstinspires.ftc.teamcode.config.globals;
 
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 
+import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
@@ -148,7 +149,7 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
      * Runs the CommandScheduler (which calls periodic() on every registered subsystem)
      * and updates telemetry.
      */
-    public void updateLoop(TelemetryManager telemetryData) {
+    public void updateLoop(JoinedTelemetry telemetryData) {
         CommandScheduler.getInstance().run();
         if (telemetryData != null) telemetryData.update();
     }
