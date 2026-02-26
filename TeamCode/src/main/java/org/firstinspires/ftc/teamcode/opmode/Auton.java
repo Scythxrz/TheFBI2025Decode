@@ -2,13 +2,11 @@ package org.firstinspires.ftc.teamcode.opmode;
 
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 import static org.firstinspires.ftc.teamcode.config.globals.Poses.*;
-
-import android.provider.Settings;
+import static org.firstinspires.ftc.teamcode.opmode.Tuning.draw;
 
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
-import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -18,7 +16,6 @@ import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
-import com.seattlesolvers.solverslib.util.TelemetryData;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
@@ -76,7 +73,7 @@ public class Auton extends CommandOpMode {
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.CLOSE_18;
     private boolean  isBlue           = true;
-    private JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
+    private final JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
     private boolean upLast, downLast, leftLast, rightLast;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
@@ -147,6 +144,7 @@ public class Auton extends CommandOpMode {
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
+
     }
 
     // ─── end() ────────────────────────────────────────────────────────────────
@@ -168,33 +166,31 @@ public class Auton extends CommandOpMode {
     // ─── CLOSE 18 ─────────────────────────────────────────────────────────────
     private SequentialCommandGroup buildClose18() {
         return new SequentialCommandGroup(
-            // Set starting position
-            setStart(START_CLOSE),
-            // Shoot preloads into goal while moving
-            shootWhileMoving(CLOSE_SCORE, 3, 1850),
-            // Intake PGP Spike Mark
-            intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
-            // Drive to scoring position and shoot
-            moveAndShootClose(3, 1850),
-            // Drive and intake from gate
-            intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
-            wait(1000.0),
-            // Drive to scoring position and shoot
-            moveAndShootClose(3, 1850),
-            // Drive and intake from gate
-            intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
-            wait(1000.0),
-            // Drive to scoring position and shoot
-            moveAndShootClose(3, 1850),
-            // Intake PPG Spike Mark
-            intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
-            // Drive to scoring position and shoot
-            moveAndShootClose(3, 1850),
-            // Intake PPG Spike Mark
-            intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
-            // Drive to scoring position and shoot
-            windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
-            moveAndShoot(CLOSE_END, 3, 1850)
+                // Shoot preloads into goal while moving
+                shootWhileMoving(CLOSE_SCORE, 3, 1850, ShootWhileMoving.HeadingMode.TANGENTIAL_REV),
+                // Intake PGP Spike Mark
+                intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
+                // Drive to scoring position and shoot
+                moveAndShootClose(3, 1850),
+                // Drive and intake from gate
+                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                wait(1000.0),
+                // Drive to scoring position and shoot
+                moveAndShootClose(3, 1850),
+                // Drive and intake from gate
+                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                wait(1000.0),
+                // Drive to scoring position and shoot
+                moveAndShootClose(3, 1850),
+                // Intake PPG Spike Mark
+                intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
+                // Drive to scoring position and shoot
+                moveAndShootClose(3, 1850),
+                // Intake PPG Spike Mark
+                intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
+                // Drive to scoring position and shoot
+                windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
+                moveAndShoot(CLOSE_END, 3, 1850)
         );
     }
 
@@ -219,18 +215,28 @@ public class Auton extends CommandOpMode {
      */
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         return new SequentialCommandGroup(
-                windUpAndDrive(CLOSE_TOSCORE, 1850, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
-                moveAndShoot(CLOSE_SCORE, 3, 1850)
+                windUpAndDrive(CLOSE_TOSCORE, flywheelVel, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
+                moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.TANGENTIAL_REV)
         );
     }
 
     private Command shootWhileMoving(Pose targetPose, int balls, double flywheelVel) {
-        return new ShootWhileMoving(follower, p(targetPose), balls, flywheelVel, isBlue)
+        return shootWhileMoving(targetPose, balls, flywheelVel, ShootWhileMoving.HeadingMode.LINEAR);
+    }
+
+    private Command shootWhileMoving(Pose targetPose, int balls, double flywheelVel, ShootWhileMoving.HeadingMode headingMode) {
+        return new ShootWhileMoving(follower, p(targetPose), balls, flywheelVel, isBlue,
+                ShootWhileMoving.FiringMode.RAPID, headingMode)
                 .withTimeout(3500);
     }
 
     private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel) {
-        return new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue)
+        return moveAndShoot(targetPose, balls, flywheelVel, MoveAndShoot.HeadingMode.LINEAR);
+    }
+
+    private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel, MoveAndShoot.HeadingMode headingMode) {
+        return new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue,
+                MoveAndShoot.FiringMode.RAPID, headingMode)
                 .withTimeout(3500);
     }
     /**
@@ -246,11 +252,6 @@ public class Auton extends CommandOpMode {
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );
-    }
-
-    /** Sets the follower starting pose (must be first in every sequence). */
-    private InstantCommand setStart(Pose pose) {
-        return new InstantCommand(() -> follower.setStartingPose(p(pose)));
     }
 
     // ─── Pose + alliance helpers ──────────────────────────────────────────────
