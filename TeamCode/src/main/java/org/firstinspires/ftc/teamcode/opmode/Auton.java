@@ -10,6 +10,7 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
+import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
@@ -202,12 +203,12 @@ public class Auton extends CommandOpMode {
      * Drive to targetPose while spinning the flywheel up to flywheelVel.
      * Conveyor stays closed — no balls fired.
      */
-    private WindUpAndDrive windUpAndDrive(Pose targetPose, double flywheelVel, WindUpAndDrive.HeadingMode headingMode, double driveSpeed) {
-        return (WindUpAndDrive) new WindUpAndDrive(follower, p(targetPose), flywheelVel, headingMode, driveSpeed)
+    private Command windUpAndDrive(Pose targetPose, double flywheelVel, WindUpAndDrive.HeadingMode headingMode, double driveSpeed) {
+        return new WindUpAndDrive(follower, p(targetPose), flywheelVel, headingMode, driveSpeed)
                 .withTimeout(3000);
     }
-    private Wait wait(double milli) {
-        return (Wait) new Wait().withTimeout((long) milli);
+    private Command wait(double milli) {
+        return new Wait().withTimeout((long) milli);
     }
     /**
      * Drive to targetPose while firing ballsToFire balls mid-path.
@@ -220,13 +221,13 @@ public class Auton extends CommandOpMode {
         );
     }
 
-    private ShootWhileMoving shootWhileMoving(Pose targetPose, int balls, double flywheelVel) {
-        return (ShootWhileMoving) new ShootWhileMoving(follower, p(targetPose), balls, flywheelVel, isBlue)
+    private Command shootWhileMoving(Pose targetPose, int balls, double flywheelVel) {
+        return new ShootWhileMoving(follower, p(targetPose), balls, flywheelVel, isBlue)
                 .withTimeout(3500);
     }
 
-    private MoveAndShoot moveAndShoot(Pose targetPose, int balls, double flywheelVel) {
-        return (MoveAndShoot) new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue)
+    private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel) {
+        return new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue)
                 .withTimeout(3500);
     }
     /**

@@ -48,6 +48,8 @@ public class ShootWhileMoving extends CommandBase {
 
     public enum FiringMode { RAPID, PACED }
 
+    public enum HeadingMode { LINEAR, TANGENTIAL, TANGENTIAL_REV }
+
     private enum State { SPINNING, FEEDING, RECOVERING, DONE }
     private State state;
 
@@ -57,6 +59,7 @@ public class ShootWhileMoving extends CommandBase {
     private final double     overrideVelocity;
     private final boolean    isBlue;
     private final FiringMode firingMode;
+    private final HeadingMode headingMode;
 
     // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
@@ -81,15 +84,22 @@ public class ShootWhileMoving extends CommandBase {
         this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID);
     }
 
-    /** Explicit velocity + firing mode. */
+    /** Explicit velocity + firing mode, linear heading (default). */
     public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
                             double overrideVelocity, boolean isBlue, FiringMode firingMode) {
+        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, firingMode, HeadingMode.LINEAR);
+    }
+
+    /** Full constructor — explicit velocity, firing mode, and heading mode. */
+    public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
+                            double overrideVelocity, boolean isBlue, FiringMode firingMode, HeadingMode headingMode) {
         this.follower         = follower;
         this.targetPose       = targetPose;
         this.ballsToFire      = ballsToFire;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
         this.firingMode       = firingMode;
+        this.headingMode      = headingMode;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 

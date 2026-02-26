@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 import com.pedropathing.geometry.BezierLine;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
+import com.pedropathing.paths.Path;
 import com.pedropathing.paths.PathChain;
 import com.seattlesolvers.solverslib.command.CommandBase;
 
@@ -36,6 +37,8 @@ public class MoveAndShoot extends CommandBase {
 
     public enum FiringMode { RAPID, PACED }
 
+    public enum HeadingMode { LINEAR, TANGENTIAL, TANGENTIAL_REV }
+
     private enum State { DRIVING, SPINNING, FEEDING, RECOVERING, DONE }
     private State state;
 
@@ -44,7 +47,8 @@ public class MoveAndShoot extends CommandBase {
     private final int        ballsToFire;
     private final double     overrideVelocity;
     private final boolean    isBlue;
-    private final FiringMode firingMode;
+    private final FiringMode  firingMode;
+    private final HeadingMode headingMode;
 
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
     private static final long FEEDING_TIMEOUT_MS = 3000;
@@ -67,15 +71,22 @@ public class MoveAndShoot extends CommandBase {
         this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID);
     }
 
-    /** Explicit velocity + firing mode. */
+    /** Explicit velocity + firing mode, linear heading (default). */
     public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
                         double overrideVelocity, boolean isBlue, FiringMode firingMode) {
+        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, firingMode, HeadingMode.LINEAR);
+    }
+
+    /** Full constructor — explicit velocity, firing mode, and heading mode. */
+    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
+                        double overrideVelocity, boolean isBlue, FiringMode firingMode, HeadingMode headingMode) {
         this.follower         = follower;
         this.targetPose       = targetPose;
         this.ballsToFire      = ballsToFire;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
         this.firingMode       = firingMode;
+        this.headingMode      = headingMode;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -90,9 +101,23 @@ public class MoveAndShoot extends CommandBase {
 
         spinUpFlywheel();
 
+        Pose from = follower.getPose();
+        Path pathObj = new Path(new BezierLine(from, targetPose));
+        switch (headingMode) {
+            case TANGENTIAL:
+                pathObj.setTangentHeadingInterpolation();
+                break;
+            case TANGENTIAL_REV:
+                pathObj.setTangentHeadingInterpolation();
+                pathObj.reverseHeadingInterpolation();
+                break;
+            case LINEAR:
+            default:
+                pathObj.setLinearHeadingInterpolation(from.getHeading(), targetPose.getHeading());
+                break;
+        }
         PathChain path = follower.pathBuilder()
-                .addPath(new BezierLine(follower.getPose(), targetPose))
-                .setLinearHeadingInterpolation(follower.getPose().getHeading(), targetPose.getHeading())
+                .addPath(pathObj)
                 .setTimeoutConstraint(300)
                 .build();
 
