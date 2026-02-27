@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
@@ -12,36 +14,36 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * ShootWhileMoving — fires balls while the robot is still driving the path.
- *<p>
+ *
  * Flywheel spins up immediately. As soon as it hits target velocity (or spin-up
  * times out), the conveyor opens and balls are fired mid-path.
- *<p>
+ *
  * ── Firing modes ──────────────────────────────────────────────────────────────
- *<p>
+ *
  *   RAPID (default)
  *     Gate opens once and stays open. Ball detections are counted continuously
  *     with no pause between shots. Use for close-range where the flywheel
  *     recovers fast enough without needing a break.
- *<p>
+ *
  *   PACED
  *     Gate closes after each detected ball, waits for flywheel to recover back
  *     to target speed, then reopens. Use for far shots where velocity sag hurts.
- *<p>
+ *
  * ── Global feeding timeout ────────────────────────────────────────────────────
  *   A single timer starts the moment feeding begins. If the timer expires before
  *   all balls are counted (e.g. only 2 loaded when 3 expected), the command
  *   finishes immediately — auto never stalls. The timer covers the ENTIRE feeding
  *   sequence, not just each individual ball.
- *<p>
+ *
  *   FEEDING_TIMEOUT_MS — how long total feeding can last before giving up.
- *<p>
+ *
  * ── Usage ─────────────────────────────────────────────────────────────────────
  *   // Rapid fire, distance LUT:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, isBlue)
- *<p>
+ *
  *   // Rapid fire, explicit velocity:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
- *<p>
+ *
  *   // Paced fire (far zone):
  *   new ShootWhileMoving(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
  */
@@ -59,8 +61,9 @@ public class ShootWhileMoving extends CommandBase {
     private final int        ballsToFire;
     private final double     overrideVelocity;
     private final boolean    isBlue;
-    private final FiringMode firingMode;
-    private final HeadingMode headingMode;
+    private final FiringMode      firingMode;
+    private final HeadingMode     headingMode;
+    private final PiecewiseHeading piecewiseHeading; // null = use headingMode
 
     // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
@@ -101,6 +104,21 @@ public class ShootWhileMoving extends CommandBase {
         this.isBlue           = isBlue;
         this.firingMode       = firingMode;
         this.headingMode      = headingMode;
+        this.piecewiseHeading = null;
+        addRequirements(robot.flywheel, robot.conveyor);
+    }
+
+    /** Full constructor — explicit velocity, firing mode, and piecewise heading. */
+    public ShootWhileMoving(Follower follower, Pose targetPose, int ballsToFire,
+                            double overrideVelocity, boolean isBlue, FiringMode firingMode, PiecewiseHeading piecewiseHeading) {
+        this.follower         = follower;
+        this.targetPose       = targetPose;
+        this.ballsToFire      = ballsToFire;
+        this.overrideVelocity = overrideVelocity;
+        this.isBlue           = isBlue;
+        this.firingMode       = firingMode;
+        this.headingMode      = null;
+        this.piecewiseHeading = piecewiseHeading;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -194,6 +212,27 @@ public class ShootWhileMoving extends CommandBase {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private void applyHeading(Path path, Pose from) {
+        if (piecewiseHeading != null) {
+            path.setHeadingInterpolation(piecewiseHeading.build());
+            return;
+        }
+        if (headingMode == null) return;
+        switch (headingMode) {
+            case TANGENTIAL:
+                path.setTangentHeadingInterpolation();
+                break;
+            case TANGENTIAL_REV:
+                path.setTangentHeadingInterpolation();
+                path.reverseHeadingInterpolation();
+                break;
+            case LINEAR:
+            default:
+                path.setLinearHeadingInterpolation(from.getHeading(), targetPose.getHeading());
+                break;
+        }
+    }
 
     private void spinUpFlywheel() {
         if (overrideVelocity > 0) {

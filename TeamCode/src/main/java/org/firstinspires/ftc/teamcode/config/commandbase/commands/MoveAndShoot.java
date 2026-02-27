@@ -1,6 +1,8 @@
 package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 
 import com.pedropathing.geometry.BezierLine;
+import com.pedropathing.paths.Path;
+import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.pedropathing.paths.Path;
@@ -48,7 +50,8 @@ public class MoveAndShoot extends CommandBase {
     private final double     overrideVelocity;
     private final boolean    isBlue;
     private final FiringMode  firingMode;
-    private final HeadingMode headingMode;
+    private final HeadingMode      headingMode;
+    private final PiecewiseHeading piecewiseHeading; // null = use headingMode
 
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
     private static final long FEEDING_TIMEOUT_MS = 3000;
@@ -87,6 +90,21 @@ public class MoveAndShoot extends CommandBase {
         this.isBlue           = isBlue;
         this.firingMode       = firingMode;
         this.headingMode      = headingMode;
+        this.piecewiseHeading = null;
+        addRequirements(robot.flywheel, robot.conveyor);
+    }
+
+    /** Full constructor — explicit velocity, firing mode, and piecewise heading. */
+    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
+                        double overrideVelocity, boolean isBlue, FiringMode firingMode, PiecewiseHeading piecewiseHeading) {
+        this.follower         = follower;
+        this.targetPose       = targetPose;
+        this.ballsToFire      = ballsToFire;
+        this.overrideVelocity = overrideVelocity;
+        this.isBlue           = isBlue;
+        this.firingMode       = firingMode;
+        this.headingMode      = null;
+        this.piecewiseHeading = piecewiseHeading;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -103,19 +121,7 @@ public class MoveAndShoot extends CommandBase {
 
         Pose from = follower.getPose();
         Path pathObj = new Path(new BezierLine(from, targetPose));
-        switch (headingMode) {
-            case TANGENTIAL:
-                pathObj.setTangentHeadingInterpolation();
-                break;
-            case TANGENTIAL_REV:
-                pathObj.setTangentHeadingInterpolation();
-                pathObj.reverseHeadingInterpolation();
-                break;
-            case LINEAR:
-            default:
-                pathObj.setLinearHeadingInterpolation(from.getHeading(), targetPose.getHeading());
-                break;
-        }
+        applyHeading(pathObj, from);
         PathChain path = follower.pathBuilder()
                 .addPath(pathObj)
                 .setTimeoutConstraint(300)
@@ -200,6 +206,27 @@ public class MoveAndShoot extends CommandBase {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private void applyHeading(Path path, Pose from) {
+        if (piecewiseHeading != null) {
+            path.setHeadingInterpolation(piecewiseHeading.build());
+            return;
+        }
+        if (headingMode == null) return;
+        switch (headingMode) {
+            case TANGENTIAL:
+                path.setTangentHeadingInterpolation();
+                break;
+            case TANGENTIAL_REV:
+                path.setTangentHeadingInterpolation();
+                path.reverseHeadingInterpolation();
+                break;
+            case LINEAR:
+            default:
+                path.setLinearHeadingInterpolation(from.getHeading(), targetPose.getHeading());
+                break;
+        }
+    }
 
     private void spinUpFlywheel() {
         if (overrideVelocity > 0) {

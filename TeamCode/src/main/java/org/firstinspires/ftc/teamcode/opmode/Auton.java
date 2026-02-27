@@ -23,6 +23,7 @@ import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.ShootWhileMoving;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.Wait;
+import org.firstinspires.ftc.teamcode.config.commandbase.commands.PiecewiseHeading;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.WindUpAndDrive;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
@@ -74,7 +75,7 @@ public class Auton extends CommandOpMode {
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.CLOSE_18;
     private boolean  isBlue           = true;
-    private final JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
+    private JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
     private boolean upLast, downLast, leftLast, rightLast;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
@@ -176,25 +177,25 @@ public class Auton extends CommandOpMode {
                 // Shoot preloads into goal while moving
                 shootWhileMoving(CLOSE_SCORE, 3, 1850, ShootWhileMoving.HeadingMode.LINEAR),
                 // Intake PGP Spike Mark
-                intakePath(new Pose[]{CLOSE_PGP_1, CLOSE_PGP}, 1),
+                intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE_1, CLOSE_GATE}, 1),
+                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE_1, CLOSE_GATE}, 1),
+                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
-                intakePath(new Pose[]{CLOSE_PPG_1, CLOSE_PPG }, 1),
+                intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
-                intakePath(new Pose[]{CLOSE_GPP_1, CLOSE_GPP}, 1),
+                intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
                 // Drive to scoring position and shoot
                 windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
                 moveAndShoot(CLOSE_END, 3, 1850)
@@ -213,6 +214,11 @@ public class Auton extends CommandOpMode {
         return new WindUpAndDrive(follower, p(targetPose), flywheelVel, headingMode, driveSpeed)
                 .withTimeout(3000);
     }
+
+    private Command windUpAndDrive(Pose targetPose, double flywheelVel, PiecewiseHeading piecewiseHeading, double driveSpeed) {
+        return new WindUpAndDrive(follower, p(targetPose), flywheelVel, piecewiseHeading, driveSpeed)
+                .withTimeout(3000);
+    }
     private Command wait(double milli) {
         return new Wait().withTimeout((long) milli);
     }
@@ -221,8 +227,11 @@ public class Auton extends CommandOpMode {
      * Flywheel should already be warm from a preceding windUpAndDrive.
      */
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
+        PiecewiseHeading toScoreHeading = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                              // follow path direction for first 60%
+                .facingPoint(0.6, 1.0, isBlue ? GOAL_BLUE.getX() : GOAL_RED.getX(), isBlue ? GOAL_BLUE.getY() : GOAL_RED.getY()); // rotate to face goal for next 40%, GOAL_BLUE.getY()); // rotate to face goal for last 40%
         return new SequentialCommandGroup(
-                windUpAndDrive(CLOSE_TOSCORE, flywheelVel, WindUpAndDrive.HeadingMode.TANGENTIAL_REV, 1),
+                windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
                 moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
         );
     }
