@@ -11,25 +11,25 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 
 /**
  * DriveToPose — drives to a target pose and finishes when Pedro reports !isBusy().
- *
+ *<p>
  * Always pair with .withTimeout(ms) so a failed path can't freeze auto.
- *
+ *<p>
  * Heading modes:
  *   LINEAR         — interpolates heading from start to end
  *   TANGENTIAL     — heading follows the curve direction
  *   TANGENTIAL_REV — tangential but reversed (robot drives backwards along the path)
- *
+ *<p>
  * Usage examples:
- *
+ *<p>
  *   // Straight line, linear heading, full speed
  *   new DriveToPose(follower, Poses.SCORE_CLOSE)
- *
+ *<p>
  *   // Straight line, tangential heading
  *   new DriveToPose(follower, Poses.SCORE_CLOSE, HeadingMode.TANGENTIAL)
- *
+ *<p>
  *   // Straight line, reversed tangential (drive backwards), 0.6 speed
  *   new DriveToPose(follower, Poses.SCORE_CLOSE, HeadingMode.TANGENTIAL_REV, 0.6)
- *
+ *<p>
  *   // Bezier curve through waypoints, tangential heading
  *   new DriveToPose(follower, new Pose[]{Poses.PGP_MID, Poses.PGP_COLLECT}, HeadingMode.TANGENTIAL)
  */
@@ -69,14 +69,6 @@ public class DriveToPose extends CommandBase {
         this.maxSpeed         = maxSpeed;
         this.piecewiseHeading = null;
     }
-    public DriveToPose(Follower follower, Pose target, HeadingMode headingMode, double maxSpeed, PiecewiseHeading piecewiseHeading) {
-        this.follower         = follower;
-        this.targetPose       = target;
-        this.waypoints        = null;
-        this.headingMode      = headingMode;
-        this.maxSpeed         = maxSpeed;
-        this.piecewiseHeading = piecewiseHeading;
-    }
 
     /** Straight line, linear heading, custom speed (legacy shorthand). */
     public DriveToPose(Follower follower, Pose target, double maxSpeed) {
@@ -98,7 +90,6 @@ public class DriveToPose extends CommandBase {
         this.headingMode = headingMode;
         this.maxSpeed    = maxSpeed;
         this.piecewiseHeading = null;
-
     }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
@@ -109,16 +100,16 @@ public class DriveToPose extends CommandBase {
         Path pathObj;
 
         if (waypoints != null && waypoints.length >= 2) {
-            // BezierCurve order: [start, control point(s)..., end]
-            // Caller passes [control point(s)..., endpoint] so we reverse
-            // the waypoints array: endpoint goes last, controls go in between.
+            // Caller convention: waypoints = [endpoint, control1, control2, ...]
+            // BezierCurve needs:  [from, ...controls_reversed, endpoint]
             Pose[] allPoses = new Pose[waypoints.length + 1];
             allPoses[0] = from;
-            // Reverse: last waypoint (endpoint) stays last, earlier ones are controls
-            for (int i = 0; i < waypoints.length - 1; i++) {
-                allPoses[i + 1] = waypoints[waypoints.length - 2 - i]; // control points reversed
+            // Insert controls in reverse order (waypoints[1..end] reversed)
+            int controlCount = waypoints.length - 1;
+            for (int i = 0; i < controlCount; i++) {
+                allPoses[i + 1] = waypoints[controlCount - i]; // reverse controls
             }
-            allPoses[allPoses.length - 1] = waypoints[0]; // first waypoint = endpoint
+            allPoses[allPoses.length - 1] = waypoints[0]; // endpoint
             pathObj = new Path(new BezierCurve(allPoses));
         } else {
             // Straight line

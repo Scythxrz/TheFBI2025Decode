@@ -62,10 +62,10 @@ public class PiecewiseHeading {
 
     /** Robot faces a fixed field point (x, y) over [t0, t1]. */
     public PiecewiseHeading facingPoint(double t0, double t1, double x, double y) {
-        return add(t0, t1, HeadingInterpolator.facingPoint(x, y));
+        return add(t0, t1, HeadingInterpolator.facingPoint(x, y).reverse());
     }
 
-    /** Robot heading follows path tangent over [t0, t1]. */
+        /** Robot heading follows path tangent over [t0, t1]. */
     public PiecewiseHeading tangent(double t0, double t1) {
         return add(t0, t1, HeadingInterpolator.tangent);
     }

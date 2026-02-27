@@ -35,8 +35,8 @@ public class PedroConstants {
             .forwardZeroPowerAcceleration(-29.450011125114425)
             .lateralZeroPowerAcceleration(-66.46948014751574)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.15, 0, 0.0, 0.025))
-            .headingPIDFCoefficients(new PIDFCoefficients(0.5, 0, 0, 0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01, 0, 0, 0.6, 0.025))
+            .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0, 0.025))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0075, 0, 0, 0.6, 0.025))
             ;
 
     public static PathConstraints pathConstraints = new PathConstraints(0.98, 100, 1, 1);

@@ -30,7 +30,7 @@ public class Poses {
     public static final Pose CLOSE_END   = new Pose(60.102,   97.98, rad(320));
     public static final Pose CLOSE_TOEND = new Pose(60.102,   97.98, rad(320));
     public static final Pose CLOSE_PGP   = new Pose(12.224,   61.419);
-    public static final Pose CLOSE_PGP_1 = new Pose(35.292, 53.076);
+    public static final Pose CLOSE_PGP_1 = new Pose(35.292, 47.076);
     public static final Pose CLOSE_GATE = new Pose(10.771, 59.8);
     public static final Pose CLOSE_GATE_1 = new Pose(24.811, 52.537);
     public static final Pose CLOSE_PPG = new Pose(17.352, 83.8);
