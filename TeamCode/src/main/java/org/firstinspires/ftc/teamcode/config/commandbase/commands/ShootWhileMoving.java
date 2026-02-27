@@ -12,36 +12,36 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * ShootWhileMoving — fires balls while the robot is still driving the path.
- *
+ *<p>
  * Flywheel spins up immediately. As soon as it hits target velocity (or spin-up
  * times out), the conveyor opens and balls are fired mid-path.
- *
+ *<p>
  * ── Firing modes ──────────────────────────────────────────────────────────────
- *
+ *<p>
  *   RAPID (default)
  *     Gate opens once and stays open. Ball detections are counted continuously
  *     with no pause between shots. Use for close-range where the flywheel
  *     recovers fast enough without needing a break.
- *
+ *<p>
  *   PACED
  *     Gate closes after each detected ball, waits for flywheel to recover back
  *     to target speed, then reopens. Use for far shots where velocity sag hurts.
- *
+ *<p>
  * ── Global feeding timeout ────────────────────────────────────────────────────
  *   A single timer starts the moment feeding begins. If the timer expires before
  *   all balls are counted (e.g. only 2 loaded when 3 expected), the command
  *   finishes immediately — auto never stalls. The timer covers the ENTIRE feeding
  *   sequence, not just each individual ball.
- *
+ *<p>
  *   FEEDING_TIMEOUT_MS — how long total feeding can last before giving up.
- *
+ *<p>
  * ── Usage ─────────────────────────────────────────────────────────────────────
  *   // Rapid fire, distance LUT:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, isBlue)
- *
+ *<p>
  *   // Rapid fire, explicit velocity:
  *   new ShootWhileMoving(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
- *
+ *<p>
  *   // Paced fire (far zone):
  *   new ShootWhileMoving(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
  */

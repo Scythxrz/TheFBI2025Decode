@@ -28,9 +28,6 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  *<p>
  * ── Localizer ─────────────────────────────────────────────────────────────────
  *   Currently configured for GoBilda Pinpoint (pinpointLocalizer).
- *   A commented-out ThreeWheelConstants block is preserved below as a reference
- *   if you switch back to three dead-wheel odometry — copy those values in and
- *   swap .pinpointLocalizer() for .threeWheelLocalizer() in createFollower().
  */
 public class PedroConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
@@ -39,10 +36,10 @@ public class PedroConstants {
             .lateralZeroPowerAcceleration(-66.46948014751574)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.15, 0, 0.0, 0.025))
             .headingPIDFCoefficients(new PIDFCoefficients(0.5, 0, 0, 0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0075, 0, 0, 0.6, 0.025))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.01, 0, 0, 0.6, 0.025))
             ;
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.99, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.98, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)
