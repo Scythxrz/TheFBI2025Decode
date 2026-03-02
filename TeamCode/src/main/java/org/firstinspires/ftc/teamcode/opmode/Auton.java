@@ -75,7 +75,7 @@ public class Auton extends CommandOpMode {
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.CLOSE_18;
     private boolean  isBlue           = true;
-    private JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
+    private final JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
     private boolean upLast, downLast, leftLast, rightLast;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
@@ -180,13 +180,13 @@ public class Auton extends CommandOpMode {
                 intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
-                // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                // Drive and intake from gate (piecewise heading built fresh at runtime)
+                gateIntake(),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
-                intakePath(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}, 1),
+                gateIntake(),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
@@ -228,8 +228,8 @@ public class Auton extends CommandOpMode {
      */
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         PiecewiseHeading toScoreHeading = new PiecewiseHeading()
-                .reversedTangent(0.0, 0.6)                              // follow path direction for first 60%
-                .facingPoint(0.6, 1.0, isBlue ? GOAL_BLUE.getX() : GOAL_RED.getX(), isBlue ? GOAL_BLUE.getY() : GOAL_RED.getY()); // rotate to face goal for next 40%, GOAL_BLUE.getY()); // rotate to face goal for last 40%
+                .tangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .facingPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
                 moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
@@ -265,6 +265,25 @@ public class Auton extends CommandOpMode {
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
                         new DriveToPose(follower, p(collectPoses), DriveToPose.HeadingMode.TANGENTIAL, collectSpeed).withTimeout(1500)
+                ),
+                new SetIntake(Intake.MotorState.STOP)
+        );
+    }
+
+    /**
+     * Gate intake — piecewise heading built fresh each call so follower.getPose().getHeading()
+     * reflects the robot's actual heading at that moment, not a stale value from init.
+     * Tangential for first 60% (following the curve in), linear to 135° for last 40%.
+     */
+    private SequentialCommandGroup gateIntake() {
+        PiecewiseHeading toGate = new PiecewiseHeading()
+                .tangent(0.0, 0.6)
+                .linear(0.6, 1.0, follower.getPose().getHeading(), Math.toRadians(135));
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> robot.flywheel.off()),
+                new ParallelCommandGroup(
+                        new SetIntake(Intake.MotorState.FORWARD),
+                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0)//.withTimeout(1500)
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );

@@ -91,6 +91,14 @@ public class DriveToPose extends CommandBase {
         this.maxSpeed    = maxSpeed;
         this.piecewiseHeading = null;
     }
+    public DriveToPose(Follower follower, Pose[] waypoints, PiecewiseHeading piecewiseHeading, double maxSpeed) {
+        this.follower    = follower;
+        this.targetPose  = waypoints[0]; // first element is the endpoint
+        this.waypoints   = waypoints;
+        this.headingMode = null;
+        this.maxSpeed    = maxSpeed;
+        this.piecewiseHeading = piecewiseHeading;
+    }
 
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
