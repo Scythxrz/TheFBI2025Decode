@@ -4,6 +4,7 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Conveyor;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Flywheel;
+import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Constants;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
@@ -59,6 +60,7 @@ public class LaunchSequence extends CommandBase {
     private final Robot    robot;
     private final Flywheel flywheel;
     private final Conveyor conveyor;
+    private final Intake intake;
 
     private long spinUpStart = 0;
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
@@ -80,6 +82,7 @@ public class LaunchSequence extends CommandBase {
         robot    = Robot.getInstance();
         flywheel = robot.flywheel;
         conveyor = robot.conveyor;
+        intake = robot.intake;
 
         addRequirements(flywheel, conveyor);
     }
@@ -108,6 +111,7 @@ public class LaunchSequence extends CommandBase {
             case WAITING:
                 if (readyToFire) {
                     conveyor.feed();
+                    intake.setIntake(Intake.MotorState.FORWARD);
                     state = State.FEEDING;
                 }
                 break;

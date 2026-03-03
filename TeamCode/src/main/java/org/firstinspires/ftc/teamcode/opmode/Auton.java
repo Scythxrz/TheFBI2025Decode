@@ -6,7 +6,6 @@ import static org.firstinspires.ftc.teamcode.config.globals.Poses.*;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
-import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -28,6 +27,7 @@ import org.firstinspires.ftc.teamcode.config.commandbase.commands.WindUpAndDrive
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
+import org.firstinspires.ftc.teamcode.config.globals.RobotDrawing;
 import org.firstinspires.ftc.teamcode.config.globals.PedroConstants;
 
 import java.io.FileWriter;
@@ -75,7 +75,7 @@ public class Auton extends CommandOpMode {
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.CLOSE_18;
     private boolean  isBlue           = true;
-    private final JoinedTelemetry telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
+    private JoinedTelemetry telemetryM; // initialized in initialize() — telemetry is null at field-init time
     private boolean upLast, downLast, leftLast, rightLast;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
@@ -83,10 +83,12 @@ public class Auton extends CommandOpMode {
     public void initialize() {
         super.reset();
         OP_MODE_TYPE = OpModeType.AUTO;
+        telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
 
         robot.init(hardwareMap);
         follower = PedroConstants.createFollower(hardwareMap);
         follower.setStartingPose(startPose());
+        RobotDrawing.init();
         // Sequence is scheduled in run() on first tick — not here —
         // so the flywheel doesn't spin up during init_loop
     }
@@ -144,6 +146,7 @@ public class Auton extends CommandOpMode {
         if (loopTimer == null) loopTimer = new ElapsedTime();
 
         follower.update();
+        RobotDrawing.drawDebug(follower);
 
         telemetryM.addData("Loop ms",   loopTimer.milliseconds());
         telemetryM.addData("Pose",      follower.getPose());
@@ -229,7 +232,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         PiecewiseHeading toScoreHeading = new PiecewiseHeading()
                 .tangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
                 moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
@@ -278,12 +281,12 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup gateIntake() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
-                .linear(0.6, 1.0, follower.getPose().getHeading(), Math.toRadians(135));
+                .lazyLinearShortest(0.6, 1.0, () -> follower.getPose().getHeading(), Math.toRadians(135));
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
-                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0)//.withTimeout(1500)
+                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(1500)
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );

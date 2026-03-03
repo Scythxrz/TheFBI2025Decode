@@ -23,7 +23,7 @@ public class Conveyor extends SubsystemBase {
 
     private final Robot robot = Robot.getInstance();
 
-    public enum ConveyorState { STOPPED, FEEDING, REVERSING }
+    public enum ConveyorState { STOPPED, FEEDING, REVERSING, FORWARD}
 
     private ConveyorState state         = ConveyorState.STOPPED;
     private final Timer   feedTimer     = new Timer();
@@ -41,15 +41,24 @@ public class Conveyor extends SubsystemBase {
             feedTimerStarted = false;
             feedTimer.resetTimer();
             robot.stopperServo.setPosition(STOPPER_OPEN);
+            robot.intake.setIntake(Intake.MotorState.FORWARD);
         }
     }
-
+    public void forward() {
+        if (state != ConveyorState.FORWARD) {
+            state = ConveyorState.FORWARD;
+            feedTimerStarted = false;
+            robot.stopperServo.setPosition(STOPPER_CLOSED);
+            robot.conveyorMotor.set(CONVEYOR_FORWARD_SPEED);
+        }
+    }
     /** Reverse the belt to clear jams. Gate stays closed. */
     public void reverse() {
         state            = ConveyorState.REVERSING;
         feedTimerStarted = false;
         robot.stopperServo.setPosition(STOPPER_CLOSED);
         robot.conveyorMotor.set(CONVEYOR_REVERSE_SPEED);
+        robot.intake.setIntake(Intake.MotorState.REVERSE);
     }
 
     /** Stop belt and close the gate. */

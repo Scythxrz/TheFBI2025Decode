@@ -12,6 +12,8 @@ import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
+import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
+import com.seattlesolvers.solverslib.command.Subsystem;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
@@ -143,10 +145,16 @@ public class Teleop extends CommandOpMode {
 
         // X — intake forward
         operator.getGamepadButton(GamepadKeys.Button.X).whenPressed(
-                new SetIntake(Intake.MotorState.FORWARD)
+                new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.conveyor.forward()),
+                        new SetIntake(Intake.MotorState.FORWARD)
+                )
         );
         operator.getGamepadButton(GamepadKeys.Button.X).whenReleased(
-                new SetIntake(Intake.MotorState.STOP)
+                new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.conveyor.stop()),
+                        new SetIntake(Intake.MotorState.STOP)
+                )
         );
 
         // B — reverse intake
