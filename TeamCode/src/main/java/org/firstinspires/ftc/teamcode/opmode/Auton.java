@@ -178,34 +178,34 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildClose18() {
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shootWhileMoving(CLOSE_SCORE, 3, 1850, ShootWhileMoving.HeadingMode.LINEAR),
+                shootWhileMoving(CLOSE_SCORE, 4, 1850, ShootWhileMoving.HeadingMode.LINEAR),
                 // Intake PGP Spike Mark
                 intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
                 // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
+                moveAndShootClose(4, 1850),
                 // Drive and intake from gate (piecewise heading built fresh at runtime)
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
                 wait(1000.0),
                 // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
+                moveAndShootClose(4, 1850),
                 // Drive and intake from gate
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
                 wait(1000.0),
                 // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
+                moveAndShootClose(4, 1850),
                 // Intake PPG Spike Mark
                 intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
                 new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
+                moveAndShootClose(4, 1850),
                 // Intake PPG Spike Mark
                 intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
                 new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
-                moveAndShoot(CLOSE_END, 3, 1850)
+                moveAndShoot(CLOSE_END, 4, 1850)
         );
     }
 
@@ -292,7 +292,8 @@ public class Auton extends CommandOpMode {
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
                         new InstantCommand(() -> robot.conveyor.forward()),
-                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(3000)
+                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(3000),
+                        new InstantCommand(() -> robot.conveyorMotor.set(0.5))
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );
