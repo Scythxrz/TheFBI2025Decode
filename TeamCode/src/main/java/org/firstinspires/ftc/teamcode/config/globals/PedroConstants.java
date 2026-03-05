@@ -36,10 +36,10 @@ public class PedroConstants {
             .lateralZeroPowerAcceleration(-66.46948014751574)
             .translationalPIDFCoefficients(new PIDFCoefficients(0.15, 0, 0.0, 0.025))
             .headingPIDFCoefficients(new PIDFCoefficients(1, 0, 0, 0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.0065, 0, 0, 0.6, 0.025))
+            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.02, 0, 0.003, 0.6, 0.025))
             ;
 
-    public static PathConstraints pathConstraints = new PathConstraints(0.98, 100, 1, 1);
+    public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
 
     public static MecanumConstants driveConstants = new MecanumConstants()
             .maxPower(1)

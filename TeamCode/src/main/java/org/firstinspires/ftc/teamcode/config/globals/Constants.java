@@ -37,12 +37,12 @@ public class Constants {
      */
     public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 11);
 
-    public static double SHOOTER_AT_TARGET_TOLERANCE = 60;   // ticks/s — "close enough" to fire
+    public static double SHOOTER_AT_TARGET_TOLERANCE = 100;   // ticks/s — "close enough" to fire
     public static double MAX_SHOOTER_VELOCITY        = 2600; // ticks/s
 
     // Velocity compensation multiplier (scales for voltage sag)
     // Formula used: velocity * (NOMINAL_VOLTAGE / measuredVoltage) * VOLTAGE_COMP_FACTOR
-    public static double VOLTAGE_COMP_FACTOR = 0.5;
+    public static double VOLTAGE_COMP_FACTOR = 1;
 
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
     // Add or adjust rows to tune velocity vs. distance for your field setup.

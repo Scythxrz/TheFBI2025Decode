@@ -185,20 +185,24 @@ public class Auton extends CommandOpMode {
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate (piecewise heading built fresh at runtime)
                 gateIntake(),
+                new SetIntake(Intake.MotorState.FORWARD),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
                 gateIntake(),
+                new SetIntake(Intake.MotorState.FORWARD),
                 wait(1000.0),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
                 intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
+                new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
                 intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
+                new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
                 moveAndShoot(CLOSE_END, 3, 1850)
@@ -231,7 +235,7 @@ public class Auton extends CommandOpMode {
      */
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         PiecewiseHeading toScoreHeading = new PiecewiseHeading()
-                .tangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
@@ -267,6 +271,7 @@ public class Auton extends CommandOpMode {
                 new InstantCommand(() -> robot.flywheel.off()), // flywheel off while collecting
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
+                        new InstantCommand(() -> robot.conveyor.forward()),
                         new DriveToPose(follower, p(collectPoses), DriveToPose.HeadingMode.TANGENTIAL, collectSpeed).withTimeout(1500)
                 ),
                 new SetIntake(Intake.MotorState.STOP)
@@ -281,12 +286,13 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup gateIntake() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
-                .lazyLinearShortest(0.6, 1.0, () -> follower.getPose().getHeading(), Math.toRadians(135));
+                .linear(0.6, 1.0, Math.toRadians(120), Math.toRadians(150));
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
-                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(1500)
+                        new InstantCommand(() -> robot.conveyor.forward()),
+                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(3000)
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );
