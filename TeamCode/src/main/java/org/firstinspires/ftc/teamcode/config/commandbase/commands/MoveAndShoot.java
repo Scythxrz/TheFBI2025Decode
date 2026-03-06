@@ -54,7 +54,7 @@ public class MoveAndShoot extends CommandBase {
     private final PiecewiseHeading piecewiseHeading; // null = use headingMode
 
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
-    private static final long FEEDING_TIMEOUT_MS = 3000;
+    private static final long FEEDING_TIMEOUT_MS = 1500;
 
     private final Robot robot = Robot.getInstance();
     private int  shotsFired   = 0;

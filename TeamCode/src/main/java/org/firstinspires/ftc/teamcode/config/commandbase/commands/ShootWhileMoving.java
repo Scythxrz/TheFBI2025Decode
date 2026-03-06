@@ -68,7 +68,7 @@ public class ShootWhileMoving extends CommandBase {
     // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
     // ms for the ENTIRE feeding sequence — if this expires, move on regardless of shot count
-    private static final long FEEDING_TIMEOUT_MS = 5000;
+    private static final long FEEDING_TIMEOUT_MS = 3000;
 
     private final Robot robot = Robot.getInstance();
     private int  shotsFired    = 0;
@@ -238,7 +238,8 @@ public class ShootWhileMoving extends CommandBase {
         if (overrideVelocity > 0) {
             robot.flywheel.setVelocity(overrideVelocity);
         } else {
-            robot.flywheel.setVelocityForDistance(distanceToGoal());
+            robot.flywheel.setVelocityForDistanceWithVelocityFF(
+                    distanceToGoal(), recessionalVelocity());
         }
     }
 
@@ -247,5 +248,19 @@ public class ShootWhileMoving extends CommandBase {
         double dx = goal.getX() - follower.getPose().getX();
         double dy = goal.getY() - follower.getPose().getY();
         return Math.hypot(dx, dy);
+    }
+
+    /** Robot velocity projected onto the goal-away axis (positive = moving away from goal). */
+    private double recessionalVelocity() {
+        Pose goal = Poses.goal(isBlue);
+        Pose pos  = follower.getPose();
+        double dx   = pos.getX() - goal.getX(); // away-from-goal vector
+        double dy   = pos.getY() - goal.getY();
+        double dist = Math.hypot(dx, dy);
+        if (dist < 1e-6) return 0; // at the goal, avoid divide-by-zero
+        // Dot robot velocity onto the unit away-vector
+        double vx = follower.getVelocity().getXComponent();
+        double vy = follower.getVelocity().getYComponent();
+        return (vx * dx + vy * dy) / dist;
     }
 }

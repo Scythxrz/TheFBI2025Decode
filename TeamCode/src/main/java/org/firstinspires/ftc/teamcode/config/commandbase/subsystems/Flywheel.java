@@ -10,17 +10,12 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * Flywheel subsystem — controls the shooter motor via PIDF velocity control.
- *<p>
- * Hardware lives in Robot.getInstance(); this subsystem calls setVelocity()
+ *
+ * Hardware lives in Robot.getInstance(); this subsystem just calls setVelocity()
  * and reads back encoder ticks each periodic() tick via the CommandScheduler.
- * Target velocity and PIDF gains are tunable via Constants.java and FTC Dashboard.
- *<p>
- * Usage:
- *   robot.flywheel.setVelocity(1850);             // spin up to exact ticks/s
- *   robot.flywheel.setVelocityForDistance(72.0);  // use shooter LUT for distance
- *   robot.flywheel.atTarget();                    // true when within tolerance
- *   robot.flywheel.ballDetected();                // true on velocity-drop detection
- *   robot.flywheel.off();                         // stop the motor
+ *
+ * The velocity lookup table (distance → ticks/s) is ported from FBI2025's
+ * Shooter / Flywheel classes and is still tunable via Constants.SHOOTER_LUT.
  */
 public class Flywheel extends SubsystemBase {
 
@@ -56,10 +51,47 @@ public class Flywheel extends SubsystemBase {
     public void setVelocityForDistance(double distanceInches) {
         double vel = velocityFromLUT(distanceInches);
         double voltage = robot.getVoltage();
-        // Partial voltage compensation: full correction would over-power at high voltage,
-        // so VOLTAGE_COMP_FACTOR (default 0.5) blends between raw and fully compensated.
+        // Partial voltage compensation (matches FBI2025 formula)
         double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
         setVelocity(compensated);
+    }
+
+
+    /**
+     * Like setVelocityForDistance, but adds a velocity feedforward that compensates
+     * for the robot moving away from the goal while shooting.
+     *
+     * When the robot is retreating, the ball's effective launch velocity relative to
+     * the goal is reduced by the robot's recessional speed — so we pre-add that back.
+     * When the robot is approaching (velocityAwayFromGoal is negative), we subtract it,
+     * preventing overshoot.
+     *
+     * @param distanceInches       current distance to goal in inches
+     * @param velocityAwayFromGoal robot's velocity component directly away from the goal,
+     *                             in inches/second. Positive = moving away, negative = closing.
+     *                             Pass 0 to behave identically to setVelocityForDistance().
+     */
+    public void setVelocityForDistanceWithVelocityFF(double distanceInches, double velocityAwayFromGoal) {
+        double vel     = velocityFromLUT(distanceInches);
+        double voltage = robot.getVoltage();
+
+        // Voltage compensation (same formula as setVelocityForDistance)
+        double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+
+        // Velocity feedforward: scale robot inches/s into shooter ticks/s using the LUT
+        // gradient at this distance (Δticks/Δdistance × robot speed = Δticks/s needed).
+        // Simpler approximation: sample the LUT at distance ± a small delta to get the
+        // ticks-per-inch slope, then multiply by the recessional speed.
+        double delta        = 1.0; // inches
+        double velAtFurther = velocityFromLUT(distanceInches + delta);
+        double velAtCloser  = velocityFromLUT(distanceInches - delta);
+        double lutSlope     = (velAtFurther - velAtCloser) / (2.0 * delta); // ticks/s per inch/s
+
+        // lutSlope × velocityAwayFromGoal: positive when retreating (adds power),
+        //                                  negative when closing  (reduces power)
+        double velocityFF = VELOCITY_FF_GAIN * lutSlope * velocityAwayFromGoal;
+
+        setVelocity(compensated + velocityFF);
     }
 
     /** Stop the flywheel. */
@@ -112,8 +144,8 @@ public class Flywheel extends SubsystemBase {
     }
 
     // ─── Periodic ─────────────────────────────────────────────────────────────
-    // Velocity is set imperatively via setVelocity() calls — no continuous update needed here.
-    // Add a software PIDF loop in periodic() if you want closed-loop correction on every tick.
+    // No continuous update needed here; velocity is set imperatively.
+    // If you add a software PIDF loop (like Decode 2026's Launcher), put it here.
     @Override
     public void periodic() { }
 

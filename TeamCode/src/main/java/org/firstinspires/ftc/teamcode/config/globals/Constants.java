@@ -5,7 +5,7 @@ import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 /**
  * Central constants file — all tunable values live here.
- * @Configurable exposes every public static field to Panels for live tuning.
+ * @Configurable exposes every public static field to FTC Dashboard for live tuning.
  */
 @Configurable
 public class Constants {
@@ -37,16 +37,18 @@ public class Constants {
      */
     public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 11);
 
-    public static double SHOOTER_AT_TARGET_TOLERANCE = 100;   // ticks/s — "close enough" to fire
+    public static double SHOOTER_AT_TARGET_TOLERANCE = 60;   // ticks/s — "close enough" to fire
     public static double MAX_SHOOTER_VELOCITY        = 2600; // ticks/s
 
     // Velocity compensation multiplier (scales for voltage sag)
     // Formula used: velocity * (NOMINAL_VOLTAGE / measuredVoltage) * VOLTAGE_COMP_FACTOR
-    public static double VOLTAGE_COMP_FACTOR = 1;
+    public static double VOLTAGE_COMP_FACTOR  = 0.5;
+    // Scales the LUT slope × recessional velocity into extra ticks/s.
+    // Start at 1.0 (full compensation) and reduce if it over-corrects.
+    public static double VELOCITY_FF_GAIN     = 1.0;
 
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
-    // Add or adjust rows to tune velocity vs. distance for your field setup.
-    // Used by Flywheel.setVelocityForDistance() and WindUpAndDrive's LUT constructors.
+    // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
     public static final double[][] SHOOTER_LUT = {
             {50.45,   1650},
             {60.2258, 1700},
