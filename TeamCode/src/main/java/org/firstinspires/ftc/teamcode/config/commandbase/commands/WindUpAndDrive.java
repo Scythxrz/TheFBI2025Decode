@@ -147,6 +147,7 @@ public class WindUpAndDrive extends CommandBase {
     @Override
     public void execute() {
         // Keep velocity fresh — don't let it drift between ticks
+        robot.conveyor.stop();
         robot.flywheel.setVelocity(flywheelVelocity);
     }
 

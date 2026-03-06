@@ -259,8 +259,7 @@ public class Auton extends CommandOpMode {
 
     private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel, MoveAndShoot.HeadingMode headingMode) {
         return new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue,
-                MoveAndShoot.FiringMode.RAPID, headingMode)
-                .withTimeout(3500);
+                MoveAndShoot.FiringMode.RAPID, headingMode);
     }
     /**
      * Drive to midPose at full speed, slow to collectSpeed for the final leg
@@ -272,7 +271,8 @@ public class Auton extends CommandOpMode {
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
                         new InstantCommand(() -> robot.conveyor.forward()),
-                        new DriveToPose(follower, p(collectPoses), DriveToPose.HeadingMode.TANGENTIAL, collectSpeed).withTimeout(1500)
+                        new DriveToPose(follower, p(collectPoses), DriveToPose.HeadingMode.TANGENTIAL, collectSpeed).withTimeout(5000),
+                        new InstantCommand(() -> robot.conveyorMotor.set(0.5))
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );

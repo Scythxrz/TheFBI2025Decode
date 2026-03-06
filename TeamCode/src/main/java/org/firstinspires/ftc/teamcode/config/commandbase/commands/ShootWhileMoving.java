@@ -68,7 +68,7 @@ public class ShootWhileMoving extends CommandBase {
     // ms to wait for flywheel to reach speed before firing anyway
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
     // ms for the ENTIRE feeding sequence — if this expires, move on regardless of shot count
-    private static final long FEEDING_TIMEOUT_MS = 3000;
+    private static final long FEEDING_TIMEOUT_MS = 5000;
 
     private final Robot robot = Robot.getInstance();
     private int  shotsFired    = 0;
