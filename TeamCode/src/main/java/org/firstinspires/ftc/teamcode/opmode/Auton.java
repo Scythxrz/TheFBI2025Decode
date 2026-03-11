@@ -192,21 +192,21 @@ public class Auton extends CommandOpMode {
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
                 wait(750.0),
-                new SetIntake(Intake.MotorState.STOP),
+                new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
                 wait(750.0),
-                new SetIntake(Intake.MotorState.FORWARD).withTimeout(250),
+                new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Drive and intake from gate
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
                 wait(750.0),
-                new SetIntake(Intake.MotorState.STOP),
+                new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
@@ -250,10 +250,18 @@ public class Auton extends CommandOpMode {
      */
     private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
         PiecewiseHeading toScoreHeading = new PiecewiseHeading()
-                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .reversedTangent(0.0, 0.6)
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());
         return new SequentialCommandGroup(
-                windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
+                // Drive to score while intake sweeps for 500ms then stops
+                new ParallelCommandGroup(
+                        windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
+                        new SequentialCommandGroup(
+                                new SetIntake(Intake.MotorState.FORWARD),
+                                wait(750.0),
+                                new SetIntake(Intake.MotorState.STOP)
+                        )
+                ),
                 moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
         );
     }

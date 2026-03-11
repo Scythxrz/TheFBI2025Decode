@@ -24,7 +24,7 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
  *   RAPID (default) — gate stays open between balls, counts detections continuously.
  *   PACED           — gate closes after each ball, waits for flywheel recovery.
  *
- *   FEEDING_TIMEOUT_MS — single global timer that starts when feeding first begins.
+
  *     If it expires before all balls are counted (e.g. only 2 loaded when 3 expected),
  *     the command finishes and auto continues. One timer for the whole sequence.
  *
@@ -41,7 +41,7 @@ public class MoveAndShoot extends CommandBase {
 
     public enum HeadingMode { LINEAR, TANGENTIAL, TANGENTIAL_REV }
 
-    private enum State { DRIVING, SPINNING, FEEDING, RECOVERING, DONE }
+    private enum State { DRIVING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
     private State state;
 
     private final Follower   follower;
@@ -54,12 +54,15 @@ public class MoveAndShoot extends CommandBase {
     private final PiecewiseHeading piecewiseHeading; // null = use headingMode
 
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
-    private static final long FEEDING_TIMEOUT_MS = 1500;
+    private static final long POST_SHOT_DRAIN_MS  = 150;  // conveyor drain after last ball
+    private static final long NO_BALL_TIMEOUT_MS  = 800;  // if no ball detected within this window, stop and move on
 
     private final Robot robot = Robot.getInstance();
-    private int  shotsFired   = 0;
+    private int          shotsFired = 0;
+    private BallDetector detector;
     private long spinUpStart  = 0;
-    private long feedingStart = 0;
+    private long drainStart   = 0;
+    private long lastBallTime = 0; // time of last ball detection; 0 = none yet
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
@@ -112,9 +115,11 @@ public class MoveAndShoot extends CommandBase {
 
     @Override
     public void initialize() {
-        shotsFired   = 0;
-        spinUpStart  = System.currentTimeMillis();
-        feedingStart = 0;
+        shotsFired  = 0;
+        detector    = new BallDetector();
+        spinUpStart = System.currentTimeMillis();
+        drainStart   = 0;
+        lastBallTime = 0;
         state        = State.DRIVING;
 
         spinUpFlywheel();
@@ -134,14 +139,6 @@ public class MoveAndShoot extends CommandBase {
     public void execute() {
         spinUpFlywheel();
 
-        // Global feeding timeout
-        if (feedingStart > 0 && System.currentTimeMillis() - feedingStart > FEEDING_TIMEOUT_MS) {
-            robot.conveyor.stop();
-            robot.flywheel.off();
-            state = State.DONE;
-            return;
-        }
-
         switch (state) {
 
             case DRIVING:
@@ -156,26 +153,31 @@ public class MoveAndShoot extends CommandBase {
                 boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
 
                 if (ready || timedOut) {
-                    feedingStart = System.currentTimeMillis(); // global timer starts NOW
                     robot.conveyor.feed();
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                if (robot.flywheel.ballDetected()) {
-                    shotsFired++;
+                if (lastBallTime == 0) lastBallTime = System.currentTimeMillis();
 
+                if (System.currentTimeMillis() - lastBallTime > NO_BALL_TIMEOUT_MS) {
+                    drainStart = System.currentTimeMillis();
+                    state = State.DRAINING;
+                    break;
+                }
+
+                if (detector.update()) {
+                    shotsFired++;
+                    lastBallTime = System.currentTimeMillis();
                     if (shotsFired >= ballsToFire) {
-                        robot.conveyor.stop();
-                        robot.flywheel.off();
-                        state = State.DONE;
+                        drainStart = System.currentTimeMillis();
+                        state = State.DRAINING;
                     } else if (firingMode == FiringMode.PACED) {
                         robot.conveyor.stop();
                         spinUpStart = System.currentTimeMillis();
                         state = State.RECOVERING;
                     }
-                    // RAPID: gate stays open, global timer handles stuck-ball case
                 }
                 break;
 
@@ -184,8 +186,17 @@ public class MoveAndShoot extends CommandBase {
                 boolean recTimedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
 
                 if (recovered || recTimedOut) {
+                    lastBallTime = System.currentTimeMillis(); // reset clock on re-entry
                     robot.conveyor.feed();
                     state = State.FEEDING;
+                }
+                break;
+
+            case DRAINING:
+                if (System.currentTimeMillis() - drainStart >= POST_SHOT_DRAIN_MS) {
+                    robot.conveyor.stop();
+                    robot.flywheel.off();
+                    state = State.DONE;
                 }
                 break;
 
