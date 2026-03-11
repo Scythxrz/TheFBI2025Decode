@@ -22,7 +22,8 @@ public class Flywheel extends SubsystemBase {
     private final Robot robot = Robot.getInstance();
 
     private double targetVelocity = 0;
-    private double prevVelocity   = -1.0; // sentinel for ball detection
+    private double prevVelocity      = -1.0; // sentinel for ball detection
+    private long   lastDetectionTime = 0;    // ms — cooldown after each ball count
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -113,11 +114,11 @@ public class Flywheel extends SubsystemBase {
 
     /**
      * Returns true once the flywheel is spinning within
-     * SHOOTER_AT_TARGET_TOLERANCE of the target velocity.
+     * SHOOTER_READY_TOLERANCE of the target velocity.
      */
     public boolean atTarget() {
         return targetVelocity > 0
-                && Math.abs(targetVelocity - getVelocity()) <= SHOOTER_AT_TARGET_TOLERANCE;
+                && Math.abs(targetVelocity - getVelocity()) <= SHOOTER_READY_TOLERANCE;
     }
 
     /**
@@ -134,11 +135,16 @@ public class Flywheel extends SubsystemBase {
             return false;
         }
 
-        if ((prevVelocity - current) > SHOOTER_AT_TARGET_TOLERANCE) {
-            prevVelocity = current;
+        // Ignore drops during cooldown — flywheel is still recovering from previous ball
+        boolean inCooldown = (System.currentTimeMillis() - lastDetectionTime) < BALL_DETECTION_COOLDOWN_MS;
+
+        if (!inCooldown && (prevVelocity - current) > SHOOTER_BALL_DROP_THRESHOLD) {
+            prevVelocity      = current;
+            lastDetectionTime = System.currentTimeMillis();
             return true;
         }
 
+        // Only track upward movement so prevVelocity reflects the recovered peak
         if (current > prevVelocity) prevVelocity = current;
         return false;
     }

@@ -29,11 +29,11 @@ public class Poses {
     public static final Pose CLOSE_TOSCORE = new Pose(56.99, 79, rad(315));
     public static final Pose CLOSE_END   = new Pose(60.102,   97.98, rad(320));
     public static final Pose CLOSE_TOEND = new Pose(60.102,   97.98, rad(320));
-    public static final Pose CLOSE_PGP   = new Pose(15,   60);
-    public static final Pose CLOSE_PGP_1 = new Pose(30.292, 50.076);
+    public static final Pose CLOSE_PGP   = new Pose(15,   65);
+    public static final Pose CLOSE_PGP_1 = new Pose(35.292, 55.076);
     public static final Pose CLOSE_GATE = new Pose(6.5, 58.8);
     public static final Pose CLOSE_GATE_1 = new Pose(24.811, 47.537);
-    public static final Pose CLOSE_PPG = new Pose(15, 83.8);
+    public static final Pose CLOSE_PPG = new Pose(17, 83.8);
     public static final Pose CLOSE_PPG_1 = new Pose(35.574, 84.051);
     public static final Pose CLOSE_GPP = new Pose(15, 34.887);
     public static final Pose CLOSE_GPP_1 = new Pose(56.381, 31.462);

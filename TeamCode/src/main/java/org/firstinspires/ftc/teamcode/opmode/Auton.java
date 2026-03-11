@@ -175,36 +175,52 @@ public class Auton extends CommandOpMode {
 
     // ─── CLOSE 18 ─────────────────────────────────────────────────────────────
     private SequentialCommandGroup buildClose18() {
+        PiecewiseHeading pgp = new PiecewiseHeading()
+                .tangent(0.0, 0.6)
+                .linear(0.6, 1.0, Math.toRadians(180), Math.toRadians(180));
+        PiecewiseHeading toScoreHeading = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shootWhileMoving(CLOSE_SCORE, 4, 1850, ShootWhileMoving.HeadingMode.LINEAR),
+                shootWhileMoving(CLOSE_SCORE, 4, 2000, ShootWhileMoving.HeadingMode.LINEAR),
                 // Intake PGP Spike Mark
                 intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
                 // Drive to scoring position and shoot
-                moveAndShootClose(4, 1850),
+                moveAndShootClose(3, 1850),
                 // Drive and intake from gate (piecewise heading built fresh at runtime)
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
-                wait(1000.0),
+                wait(750.0),
+                new SetIntake(Intake.MotorState.STOP),
                 // Drive to scoring position and shoot
-                moveAndShootClose(4, 1850),
+                moveAndShootClose(3, 1850),
                 // Drive and intake from gate
                 gateIntake(),
                 new SetIntake(Intake.MotorState.FORWARD),
-                wait(1000.0),
+                wait(750.0),
+                new SetIntake(Intake.MotorState.FORWARD).withTimeout(250),
                 // Drive to scoring position and shoot
-                moveAndShootClose(4, 1850),
+                moveAndShootClose(3, 1850),
+                // Drive and intake from gate
+                gateIntake(),
+                new SetIntake(Intake.MotorState.FORWARD),
+                wait(750.0),
+                new SetIntake(Intake.MotorState.STOP),
+                // Drive to scoring position and shoot
+                moveAndShootClose(3, 1850),
                 // Intake PPG Spike Mark
                 intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
                 new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
-                moveAndShootClose(4, 1850),
-                // Intake PPG Spike Mark
+                windUpAndDrive(CLOSE_TOEND, 1850, toScoreHeading, 1),
+                moveAndShoot(CLOSE_END, 3, 1850, MoveAndShoot.HeadingMode.LINEAR)
+                /*// Intake GPP Spike Mark
                 intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
                 new SetIntake(Intake.MotorState.FORWARD),
                 // Drive to scoring position and shoot
                 windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
-                moveAndShoot(CLOSE_END, 4, 1850)
+                moveAndShoot(CLOSE_END, 4, 1850)*/
         );
     }
 
@@ -285,7 +301,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup gateIntake() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
-                .linear(0.6, 1.0, Math.toRadians(120), Math.toRadians(150));
+                .linear(0.6, 1.0, Math.toRadians(120), Math.toRadians(160));
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(

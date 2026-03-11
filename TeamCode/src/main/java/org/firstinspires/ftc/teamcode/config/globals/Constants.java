@@ -37,15 +37,29 @@ public class Constants {
      */
     public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 11);
 
-    public static double SHOOTER_AT_TARGET_TOLERANCE = 60;   // ticks/s — "close enough" to fire
-    public static double MAX_SHOOTER_VELOCITY        = 2600; // ticks/s
+    // How close the flywheel needs to be to targetVelocity before feeding starts.
+    // Wider = shoots sooner at the cost of slightly reduced accuracy.
+    // If the flywheel consistently levels off 100+ ticks below target, raise this.
+    public static double SHOOTER_READY_TOLERANCE    = 150;  // ticks/s
+
+    // Minimum velocity DROP in a single loop tick to count as a ball passing through.
+    // Must be large enough to ignore normal flywheel noise (~5-15 ticks/s) but
+    // small enough to catch real ball events (~80-150 ticks/s drop).
+    // Do NOT tie this to SHOOTER_READY_TOLERANCE — they serve different purposes.
+    public static double SHOOTER_BALL_DROP_THRESHOLD  = 100;   // ticks/s
+
+    // After counting a ball, ignore velocity drops for this long.
+    // Should be long enough for the flywheel to recover (~100-300ms typically).
+    // Too short → double-counts one ball. Too long → misses rapid consecutive balls.
+    public static long   BALL_DETECTION_COOLDOWN_MS  = 150;  // ms
+    public static double MAX_SHOOTER_VELOCITY        = 2400; // ticks/s
 
     // Velocity compensation multiplier (scales for voltage sag)
     // Formula used: velocity * (NOMINAL_VOLTAGE / measuredVoltage) * VOLTAGE_COMP_FACTOR
     public static double VOLTAGE_COMP_FACTOR  = 0.5;
     // Scales the LUT slope × recessional velocity into extra ticks/s.
     // Start at 1.0 (full compensation) and reduce if it over-corrects.
-    public static double VELOCITY_FF_GAIN     = 1.0;
+    public static double VELOCITY_FF_GAIN     = 1.5;
 
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
     // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
