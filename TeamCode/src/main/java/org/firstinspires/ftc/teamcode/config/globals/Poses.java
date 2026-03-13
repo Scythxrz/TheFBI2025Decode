@@ -25,7 +25,8 @@ public class Poses {
 
     // ─── Close-side sequences ─────────────────────────────────────────────────
 
-    public static final Pose CLOSE_SCORE = new Pose(50.99, 79, rad(308));
+    public static final Pose CLOSE_SCORE = new Pose(50.99, 77, rad(308));
+    public static final Pose CLOSE_TOSCOREMID = new Pose(61, 73);
     public static final Pose CLOSE_TOSCORE = new Pose(50.99, 79, rad(308));
     public static final Pose CLOSE_END   = new Pose(54.853,   102.53, rad(320));
     public static final Pose CLOSE_TOEND = new Pose(54.853,   102.53, rad(320));

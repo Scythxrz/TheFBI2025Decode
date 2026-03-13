@@ -113,7 +113,7 @@ public class Teleop extends CommandOpMode {
         driver.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(
                 new InstantCommand(() -> headingLock = !headingLock)
         );
-
+        /*
         // Auto-park
         driver.getGamepadButton(GamepadKeys.Button.B).whenPressed(
                 new InstantCommand(() -> {
@@ -130,27 +130,27 @@ public class Teleop extends CommandOpMode {
         driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
                 new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
         );
-
+        */
         // ── Operator button bindings ────────────────────────────────────────
 
         // Y — RAPID fire (gate stays open between balls — close range)
-        operator.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
+        driver.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
                 new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.RAPID)
         );
 
         // A — PACED fire (gate closes between balls for flywheel recovery — far range)
-        operator.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
+        driver.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
                 new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.PACED)
         );
 
         // X — intake forward
-        operator.getGamepadButton(GamepadKeys.Button.X).whenPressed(
+        driver.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(
                 new ParallelCommandGroup(
                         new InstantCommand(() -> robot.conveyor.forward()),
                         new SetIntake(Intake.MotorState.FORWARD)
                 )
         );
-        operator.getGamepadButton(GamepadKeys.Button.X).whenReleased(
+        driver.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenReleased(
                 new ParallelCommandGroup(
                         new InstantCommand(() -> robot.conveyor.stop()),
                         new SetIntake(Intake.MotorState.STOP)

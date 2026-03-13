@@ -255,7 +255,7 @@ public class Auton extends CommandOpMode {
         return new SequentialCommandGroup(
                 // Drive to score while intake sweeps for 500ms then stops
                 new ParallelCommandGroup(
-                        windUpAndDrive(CLOSE_TOSCORE, flywheelVel, toScoreHeading, 1),
+                        new WindUpAndDrive(follower, p(new Pose[]{CLOSE_TOSCOREMID, CLOSE_TOSCORE}), flywheelVel, toScoreHeading, 1),
                         new SequentialCommandGroup(
                                 new SetIntake(Intake.MotorState.FORWARD),
                                 wait(750.0),

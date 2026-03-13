@@ -116,6 +116,17 @@ public class WindUpAndDrive extends CommandBase {
         this.piecewiseHeading = null;
     }
 
+    public WindUpAndDrive(Follower follower, Pose[] waypoints, double flywheelVelocity,
+                          PiecewiseHeading piecewiseHeading, double driveSpeed) {
+        this.follower         = follower;
+        this.targetPose       = waypoints[waypoints.length - 1];
+        this.waypoints        = waypoints;
+        this.flywheelVelocity = flywheelVelocity;
+        this.headingMode      = null;
+        this.driveSpeed       = driveSpeed;
+        this.piecewiseHeading = piecewiseHeading;
+    }
+
     // ─── Lifecycle ────────────────────────────────────────────────────────────
 
     @Override
