@@ -4,41 +4,40 @@ import com.seattlesolvers.solverslib.command.CommandBase;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Conveyor;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Flywheel;
-import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Constants;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
  * LaunchSequence — TeleOp shooting command, bound to a held button.
- *<p>
+ *
  * Runs until the button is released (isFinished always returns false).
  * The operator holds the button; this command fires as many balls as come
  * through while the button is held and conditions are met.
- <p>
+ *
  * ── Firing modes ──────────────────────────────────────────────────────────────
- *<p>
+ *
  *   RAPID (default — bind to Y)
  *     Gate opens once flywheel + heading are ready and stays open.
  *     Balls pass through continuously with no pause between shots.
  *     If heading or flywheel drops out, the gate closes until they recover.
  *     Use for close-range where the flywheel recovers between balls fast enough.
- *<p>
+ *
  *   PACED (bind to A or RB)
  *     Gate closes after each detected ball and waits for flywheel to recover
  *     back to target speed before reopening.
  *     Use for far shots where velocity sag between balls would hurt accuracy.
- *<p>
+ *
  * ── No ball-count timeout in TeleOp ──────────────────────────────────────────
  *   Unlike auto, there's no ball-count limit or global timeout here — the
  *   operator controls duration by holding/releasing the button. The command
  *   simply keeps firing until the button is released.
- *<p>
+ *
  * ── Usage (in TeleOp initialize()) ───────────────────────────────────────────
  *   // Rapid — hold Y
  *   operator.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
  *       new LaunchSequence(() -> distanceToGoal, () -> headingError)
  *   );
- *<p>
+ *
  *   // Paced — hold A
  *   operator.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
  *       new LaunchSequence(() -> distanceToGoal, () -> headingError, FiringMode.PACED)
@@ -60,8 +59,8 @@ public class LaunchSequence extends CommandBase {
     private final Robot    robot;
     private final Flywheel flywheel;
     private final Conveyor conveyor;
-    private final Intake intake;
 
+    private BallDetector detector;
     private long spinUpStart = 0;
     private static final long SPIN_UP_TIMEOUT_MS = 2000;
 
@@ -82,7 +81,6 @@ public class LaunchSequence extends CommandBase {
         robot    = Robot.getInstance();
         flywheel = robot.flywheel;
         conveyor = robot.conveyor;
-        intake = robot.intake;
 
         addRequirements(flywheel, conveyor);
     }
@@ -91,8 +89,9 @@ public class LaunchSequence extends CommandBase {
 
     @Override
     public void initialize() {
-        state        = State.WAITING;
-        spinUpStart  = System.currentTimeMillis();
+        state       = State.WAITING;
+        spinUpStart = System.currentTimeMillis();
+        detector    = new BallDetector();
         flywheel.setVelocityForDistance(distanceSupplier.get());
     }
 
@@ -110,36 +109,35 @@ public class LaunchSequence extends CommandBase {
 
             case WAITING:
                 if (readyToFire) {
+                    detector = new BallDetector(); // fresh baseline each time gate opens
                     conveyor.feed();
-                    intake.setIntake(Intake.MotorState.FORWARD);
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                if (!readyToFire && !spinTimedOut) {
-                    // Lost heading or flywheel — close gate and wait for recovery
-                    conveyor.stop();
-                    spinUpStart = System.currentTimeMillis();
-                    state = State.WAITING;
-                    break;
-                }
-
-                if (flywheel.ballDetected()) {
-                    if (firingMode == FiringMode.PACED) {
-                        // Close gate, wait for flywheel recovery before next ball
+                if (firingMode == FiringMode.PACED) {
+                    // PACED: close gate if heading/flywheel lost mid-shot
+                    if (!readyToFire && !spinTimedOut) {
+                        conveyor.stop();
+                        spinUpStart = System.currentTimeMillis();
+                        state = State.WAITING;
+                        break;
+                    }
+                    if (detector.update()) {
                         conveyor.stop();
                         spinUpStart = System.currentTimeMillis();
                         state = State.RECOVERING;
                     }
-                    // RAPID: gate stays open — next ball feeds immediately
                 }
+                // RAPID: gate stays open unconditionally — operator controls duration
                 break;
 
             case RECOVERING:
                 if (flywheel.atTarget() || System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS) {
                     // Flywheel recovered — reopen for next ball
                     if (readyToFire) {
+                        detector = new BallDetector(); // fresh baseline after recovery
                         conveyor.feed();
                         state = State.FEEDING;
                     } else {
