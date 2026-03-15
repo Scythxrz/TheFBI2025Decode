@@ -15,12 +15,13 @@ import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
+import org.firstinspires.ftc.teamcode.config.commandbase.commands.Shoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.ShootWhileMoving;
-import org.firstinspires.ftc.teamcode.config.commandbase.commands.Wait;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.PiecewiseHeading;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.WindUpAndDrive;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
@@ -31,6 +32,10 @@ import org.firstinspires.ftc.teamcode.config.globals.PedroConstants;
 
 import java.io.FileWriter;
 import java.io.IOException;
+
+import static org.firstinspires.ftc.teamcode.config.commandbase.commands.Shoot.FiringMode.*;
+import static org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose.HeadingMode.*;
+import static org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake.*;
 
 /**
  * Main Autonomous OpMode.
@@ -69,10 +74,10 @@ public class Auton extends CommandOpMode {
 
     // ─── Menu ─────────────────────────────────────────────────────────────────
     private enum StartPos { CLOSE, FAR }
-    private enum Sequence { CLOSE_18, CLOSE_15, FAR_9, FAR_9_GPP }
+    private enum Sequence { ALLIANCE, NO_ALLIANCE }
 
     private StartPos selectedStart    = StartPos.CLOSE;
-    private Sequence selectedSequence = Sequence.CLOSE_18;
+    private Sequence selectedSequence = Sequence.NO_ALLIANCE;
     private boolean  isBlue           = true;
     private JoinedTelemetry telemetryM; // initialized in initialize() — telemetry is null at field-init time
     private boolean upLast, downLast, leftLast, rightLast;
@@ -169,58 +174,71 @@ public class Auton extends CommandOpMode {
 
     private SequentialCommandGroup buildSequence() {
         switch (selectedSequence) {
-            default:        return buildClose18();
+            case ALLIANCE:        return buildAlliance();
+            case NO_ALLIANCE:     return buildNoAlliance();
+            default:              return null;
         }
     }
 
-    // ─── CLOSE 18 ─────────────────────────────────────────────────────────────
-    private SequentialCommandGroup buildClose18() {
-        PiecewiseHeading pgp = new PiecewiseHeading()
-                .tangent(0.0, 0.6)
-                .linear(0.6, 1.0, Math.toRadians(180), Math.toRadians(180));
-        PiecewiseHeading toScoreHeading = new PiecewiseHeading()
+    // ─── CLOSE 18 w/ Alliance─────────────────────────────────────────────────────────────
+    private SequentialCommandGroup buildAlliance() {
+        PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shootWhileMoving(CLOSE_SCORE, 4, 2000, ShootWhileMoving.HeadingMode.LINEAR),
-                // Intake PGP Spike Mark
-                intakePath(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}, 1),
-                // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
-                // Drive and intake from gate (piecewise heading built fresh at runtime)
-                gateIntake(),
-                new SetIntake(Intake.MotorState.FORWARD),
-                wait(750.0),
-                new SetIntake(Intake.MotorState.FORWARD),
-                // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
-                // Drive and intake from gate
-                gateIntake(),
-                new SetIntake(Intake.MotorState.FORWARD),
-                wait(750.0),
-                new SetIntake(Intake.MotorState.FORWARD),
-                // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
-                // Drive and intake from gate
-                gateIntake(),
-                new SetIntake(Intake.MotorState.FORWARD),
-                wait(750.0),
-                new SetIntake(Intake.MotorState.FORWARD),
-                // Drive to scoring position and shoot
-                moveAndShootClose(3, 1850),
-                // Intake PPG Spike Mark
-                intakePath(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}, 1),
-                new SetIntake(Intake.MotorState.FORWARD),
-                // Drive to scoring position and shoot
-                windUpAndDrive(CLOSE_TOEND, 1850, toScoreHeading, 1),
-                moveAndShoot(CLOSE_END, 3, 1850, MoveAndShoot.HeadingMode.LINEAR)
-                /*// Intake GPP Spike Mark
-                intakePath(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}, 1),
-                new SetIntake(Intake.MotorState.FORWARD),
-                // Drive to scoring position and shoot
-                windUpAndDrive(CLOSE_TOEND, 1850, WindUpAndDrive.HeadingMode.LINEAR, 1),
-                moveAndShoot(CLOSE_END, 4, 1850)*/
+                swm(CLOSE_SCORE, 3, 2000, LINEAR),
+                // Pick up PGP Spike Mark
+                intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Gate intake
+                gate(),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Gate intake
+                gate(),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Gate intake
+                gate(),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Pick up PPG Spike Mark
+                intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
+                // Score 3
+                shoot(CLOSE_END, 3, 1850, piecewiseScore)
+        );
+    }
+
+    // ─── CLOSE 18 w/ Alliance─────────────────────────────────────────────────────────────
+    private SequentialCommandGroup buildNoAlliance() {
+        PiecewiseHeading piecewiseScore = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+        return new SequentialCommandGroup(
+                // Shoot preloads into goal while moving
+                swm(CLOSE_SCORE, 3, 2000, LINEAR),
+                // Pick up PGP Spike Mark
+                intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Gate intake
+                gate(),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Gate intake
+                gate(),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Pick up PPG Spike Mark
+                intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
+                // Score 3
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                // Pick up GPP Spike Mark
+                intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
+                // Score 3
+                shoot(CLOSE_END, 3, 1850, piecewiseScore)
         );
     }
 
@@ -228,85 +246,28 @@ public class Auton extends CommandOpMode {
     // Helper methods
     // ═══════════════════════════════════════════════════════════════════════════
 
-    /**
-     * Drive to targetPose while spinning the flywheel up to flywheelVel.
-     * Conveyor stays closed — no balls fired.
-     */
-    private Command windUpAndDrive(Pose targetPose, double flywheelVel, WindUpAndDrive.HeadingMode headingMode, double driveSpeed) {
-        return new WindUpAndDrive(follower, p(targetPose), flywheelVel, headingMode, driveSpeed)
-                .withTimeout(3000);
+    private ShootWhileMoving swm(Pose to, int balls, double vel, DriveToPose.HeadingMode hm) {
+        return new ShootWhileMoving(follower, p(to), balls, vel, isBlue, RAPID, hm);
     }
-
-    private Command windUpAndDrive(Pose targetPose, double flywheelVel, PiecewiseHeading piecewiseHeading, double driveSpeed) {
-        return new WindUpAndDrive(follower, p(targetPose), flywheelVel, piecewiseHeading, driveSpeed)
-                .withTimeout(3000);
+    private MoveAndShoot shoot(Pose to, int balls, double vel, PiecewiseHeading hm) {
+        return new MoveAndShoot(follower, p(to), balls, vel, isBlue, RAPID, hm);
     }
-    private Command wait(double milli) {
-        return new Wait().withTimeout((long) milli);
+    private WaitCommand wait(double s) {
+        return new WaitCommand((long) s);
     }
-    /**
-     * Drive to targetPose while firing ballsToFire balls mid-path.
-     * Flywheel should already be warm from a preceding windUpAndDrive.
-     */
-    private SequentialCommandGroup moveAndShootClose(int ballsToFire, double flywheelVel) {
-        PiecewiseHeading toScoreHeading = new PiecewiseHeading()
-                .reversedTangent(0.0, 0.6)
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());
+    private SequentialCommandGroup intake(Pose[] to) {
         return new SequentialCommandGroup(
-                // Drive to score while intake sweeps for 500ms then stops
+                new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
-                        new WindUpAndDrive(follower, p(new Pose[]{CLOSE_TOSCOREMID, CLOSE_TOSCORE}), flywheelVel, toScoreHeading, 1),
-                        new SequentialCommandGroup(
-                                new SetIntake(Intake.MotorState.FORWARD),
-                                wait(750.0),
-                                new SetIntake(Intake.MotorState.STOP)
-                        )
-                ),
-                moveAndShoot(CLOSE_SCORE, ballsToFire, flywheelVel, MoveAndShoot.HeadingMode.LINEAR)
-        );
-    }
-
-    private Command shootWhileMoving(Pose targetPose, int balls, double flywheelVel) {
-        return shootWhileMoving(targetPose, balls, flywheelVel, ShootWhileMoving.HeadingMode.LINEAR);
-    }
-
-    private Command shootWhileMoving(Pose targetPose, int balls, double flywheelVel, ShootWhileMoving.HeadingMode headingMode) {
-        return new ShootWhileMoving(follower, p(targetPose), balls, flywheelVel, isBlue,
-                ShootWhileMoving.FiringMode.RAPID, headingMode)
-                .withTimeout(3500);
-    }
-
-    private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel) {
-        return moveAndShoot(targetPose, balls, flywheelVel, MoveAndShoot.HeadingMode.LINEAR);
-    }
-
-    private Command moveAndShoot(Pose targetPose, int balls, double flywheelVel, MoveAndShoot.HeadingMode headingMode) {
-        return new MoveAndShoot(follower, p(targetPose), balls, flywheelVel, isBlue,
-                MoveAndShoot.FiringMode.RAPID, headingMode);
-    }
-    /**
-     * Drive to midPose at full speed, slow to collectSpeed for the final leg
-     * to collectPose with intake running, then stop intake.
-     */
-    private SequentialCommandGroup intakePath(Pose[] collectPoses, double collectSpeed) {
-        return new SequentialCommandGroup(
-                new InstantCommand(() -> robot.flywheel.off()), // flywheel off while collecting
-                new ParallelCommandGroup(
-                        new SetIntake(Intake.MotorState.FORWARD),
+                        new SetIntake(MotorState.REVERSE),
                         new InstantCommand(() -> robot.conveyor.forward()),
-                        new DriveToPose(follower, p(collectPoses), DriveToPose.HeadingMode.TANGENTIAL, collectSpeed).withTimeout(5000),
-                        new InstantCommand(() -> robot.conveyorMotor.set(0.5))
+                        new DriveToPose(follower, p(to), TANGENTIAL, 1)
                 ),
-                new SetIntake(Intake.MotorState.STOP)
+                new SetIntake(MotorState.STOP)
         );
     }
 
-    /**
-     * Gate intake — piecewise heading built fresh each call so follower.getPose().getHeading()
-     * reflects the robot's actual heading at that moment, not a stale value from init.
-     * Tangential for first 60% (following the curve in), linear to 135° for last 40%.
-     */
-    private SequentialCommandGroup gateIntake() {
+    private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
                 .linear(0.6, 1.0, Math.toRadians(120), Math.toRadians(160));
@@ -315,13 +276,11 @@ public class Auton extends CommandOpMode {
                 new ParallelCommandGroup(
                         new SetIntake(Intake.MotorState.FORWARD),
                         new InstantCommand(() -> robot.conveyor.forward()),
-                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0).withTimeout(3000),
-                        new InstantCommand(() -> robot.conveyorMotor.set(0.5))
+                        new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0)
                 ),
                 new SetIntake(Intake.MotorState.STOP)
         );
     }
-
     // ─── Pose + alliance helpers ──────────────────────────────────────────────
 
     /** Mirror pose for Red alliance if needed. */

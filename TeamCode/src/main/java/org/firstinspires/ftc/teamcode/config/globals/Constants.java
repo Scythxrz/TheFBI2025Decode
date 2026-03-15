@@ -86,7 +86,7 @@ public class Constants {
 
     // ─── Intake ───────────────────────────────────────────────────────────────
     public static double INTAKE_FORWARD_SPEED  =  1.0;
-    public static double INTAKE_REVERSE_SPEED  =  0.5;
+    public static double INTAKE_REVERSE_SPEED  =  1.0;
     public static double KICKER_FORWARD_POWER  = -1.0;
 
     // Ball detection: drop in intake encoder velocity that signals a ball was intaked

@@ -5,7 +5,6 @@ import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 import com.bylazar.configurables.annotations.Configurable;
 import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.PanelsTelemetry;
-import com.bylazar.telemetry.TelemetryManager;
 import com.pedropathing.control.PIDFController;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
@@ -13,7 +12,8 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
-import com.seattlesolvers.solverslib.command.Subsystem;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
+import com.seattlesolvers.solverslib.command.WaitCommand;
 import com.seattlesolvers.solverslib.gamepad.GamepadEx;
 import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
@@ -26,6 +26,8 @@ import static org.firstinspires.ftc.teamcode.config.globals.PedroConstants.creat
 
 import java.io.BufferedReader;
 import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Objects;
 
 /**
@@ -137,12 +139,16 @@ public class Teleop extends CommandOpMode {
         driver.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
                 new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.RAPID)
         );
-
+        driver.getGamepadButton(GamepadKeys.Button.Y).whenReleased(
+                new SetIntake(Intake.MotorState.STOP)
+        );
         // A — PACED fire (gate closes between balls for flywheel recovery — far range)
         driver.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
                 new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.PACED)
         );
-
+        driver.getGamepadButton(GamepadKeys.Button.A).whenReleased(
+                new SetIntake(Intake.MotorState.STOP)
+        );
         // X — intake forward
         driver.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(
                 new ParallelCommandGroup(
@@ -163,6 +169,17 @@ public class Teleop extends CommandOpMode {
         );
         operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
+        );
+        
+        // Y - unjam intake
+        driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
+                new SequentialCommandGroup(
+                        new SetIntake(Intake.MotorState.REVERSE),
+                        new WaitCommand(250),
+                        new SetIntake(Intake.MotorState.FORWARD),
+                        new WaitCommand(250),
+                        new SetIntake(Intake.MotorState.STOP)
+                )
         );
     }
 
@@ -274,6 +291,11 @@ public class Teleop extends CommandOpMode {
         robot.intake.stop();
         robot.flywheel.off();
         robot.conveyor.stop();
+        try (FileWriter writer = new FileWriter("/sdcard/FIRST/pose.txt")) {
+            writer.write(follower.getPose().getX() + "," + follower.getPose().getY() + "," + follower.getPose().getHeading());
+        } catch (IOException e) {
+            telemetry.addLine("WARNING: Failed to save end pose");
+        }
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────

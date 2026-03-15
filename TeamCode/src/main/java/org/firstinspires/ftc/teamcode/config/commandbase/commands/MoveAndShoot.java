@@ -1,256 +1,67 @@
 package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 
-import com.pedropathing.geometry.BezierLine;
-import com.pedropathing.paths.Path;
-import com.pedropathing.paths.HeadingInterpolator;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
-import com.pedropathing.paths.Path;
-import com.pedropathing.paths.PathChain;
-import com.seattlesolvers.solverslib.command.CommandBase;
-
-import org.firstinspires.ftc.teamcode.config.globals.Poses;
-import org.firstinspires.ftc.teamcode.config.globals.Robot;
+import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 /**
- * MoveAndShoot — drives the path while winding up, then fires after path is done.
+ * MoveAndShoot — drives to a pose, then fires after arriving.
  *
- * Unlike ShootWhileMoving, feeding does NOT begin until the path finishes.
- * Use this when you need the robot at the exact target pose before firing
- * (e.g. far-zone shots where heading precision matters).
- *
- * Same FiringMode and global feeding timeout as ShootWhileMoving:
- *
- *   RAPID (default) — gate stays open between balls, counts detections continuously.
- *   PACED           — gate closes after each ball, waits for flywheel recovery.
- *
-
- *     If it expires before all balls are counted (e.g. only 2 loaded when 3 expected),
- *     the command finishes and auto continues. One timer for the whole sequence.
+ * Composed of WindUpAndDrive → Shoot in sequence.
+ * The flywheel spins up during the drive so it's ready the moment the robot arrives.
+ * To change pathing, change DriveToPose/WindUpAndDrive. To change shooting, change Shoot.
  *
  * ── Usage ─────────────────────────────────────────────────────────────────────
- *   // Rapid fire after arriving (default):
- *   new MoveAndShoot(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue)
- *
- *   // Paced fire after arriving (far zone):
- *   new MoveAndShoot(follower, Poses.FAR_SCORE, 3, 2450, isBlue, FiringMode.PACED)
+ *   new MoveAndShoot(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue, FiringMode.RAPID, HeadingMode.LINEAR)
+ *   new MoveAndShoot(follower, Poses.SCORE_CLOSE, 3, 1850, isBlue, FiringMode.RAPID, myPiecewiseHeading)
+ *   new MoveAndShoot(follower, new Pose[]{endpoint, ctrl1}, 3, 1850, isBlue, FiringMode.RAPID, HeadingMode.TANGENTIAL)
+ *   new MoveAndShoot(follower, new Pose[]{endpoint, ctrl1}, 3, 1850, isBlue, FiringMode.RAPID, myPiecewiseHeading)
  */
-public class MoveAndShoot extends CommandBase {
+public class MoveAndShoot extends SequentialCommandGroup {
 
-    public enum FiringMode { RAPID, PACED }
-
-    public enum HeadingMode { LINEAR, TANGENTIAL, TANGENTIAL_REV }
-
-    private enum State { DRIVING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
-    private State state;
-
-    private final Follower   follower;
-    private final Pose       targetPose;
-    private final int        ballsToFire;
-    private final double     overrideVelocity;
-    private final boolean    isBlue;
-    private final FiringMode  firingMode;
-    private final HeadingMode      headingMode;
-    private final PiecewiseHeading piecewiseHeading; // null = use headingMode
-
-    private static final long SPIN_UP_TIMEOUT_MS = 2000;
-    private static final long POST_SHOT_DRAIN_MS  = 150;  // conveyor drain after last ball
-    private static final long NO_BALL_TIMEOUT_MS  = 800;  // if no ball detected within this window, stop and move on
-
-    private final Robot robot = Robot.getInstance();
-    private int          shotsFired = 0;
-    private BallDetector detector;
-    private long spinUpStart  = 0;
-    private long drainStart   = 0;
-    private long lastBallTime = 0; // time of last ball detection; 0 = none yet
-
-    // ─── Constructors ─────────────────────────────────────────────────────────
-
-    /** Rapid fire, distance LUT velocity. */
-    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire, boolean isBlue) {
-        this(follower, targetPose, ballsToFire, -1, isBlue, FiringMode.RAPID);
+    /** Straight line, heading mode. */
+    public MoveAndShoot(Follower follower, Pose targetPose,
+                        int ballsToFire, double overrideVelocity,
+                        boolean isBlue, Shoot.FiringMode firingMode,
+                        DriveToPose.HeadingMode headingMode) {
+        addCommands(
+                new WindUpAndDrive(follower, targetPose, overrideVelocity, headingMode, 1.0),
+                new Shoot(follower, ballsToFire, overrideVelocity, isBlue, firingMode)
+        );
     }
 
-    /** Rapid fire, explicit velocity. */
-    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
-                        double overrideVelocity, boolean isBlue) {
-        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID);
+    /** Straight line, piecewise heading. */
+    public MoveAndShoot(Follower follower, Pose targetPose,
+                        int ballsToFire, double overrideVelocity,
+                        boolean isBlue, Shoot.FiringMode firingMode,
+                        PiecewiseHeading piecewiseHeading) {
+        addCommands(
+                new WindUpAndDrive(follower, targetPose, overrideVelocity, piecewiseHeading, 1.0),
+                new Shoot(follower, ballsToFire, overrideVelocity, isBlue, firingMode)
+        );
     }
 
-    /** Explicit velocity + firing mode, linear heading (default). */
-    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
-                        double overrideVelocity, boolean isBlue, FiringMode firingMode) {
-        this(follower, targetPose, ballsToFire, overrideVelocity, isBlue, firingMode, HeadingMode.LINEAR);
+    /** Bezier curve, heading mode. */
+    public MoveAndShoot(Follower follower, Pose[] waypoints,
+                        int ballsToFire, double overrideVelocity,
+                        boolean isBlue, Shoot.FiringMode firingMode,
+                        DriveToPose.HeadingMode headingMode) {
+        addCommands(
+                new WindUpAndDrive(follower, waypoints, overrideVelocity, headingMode, 1.0),
+                new Shoot(follower, ballsToFire, overrideVelocity, isBlue, firingMode)
+        );
     }
 
-    /** Full constructor — explicit velocity, firing mode, and heading mode. */
-    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
-                        double overrideVelocity, boolean isBlue, FiringMode firingMode, HeadingMode headingMode) {
-        this.follower         = follower;
-        this.targetPose       = targetPose;
-        this.ballsToFire      = ballsToFire;
-        this.overrideVelocity = overrideVelocity;
-        this.isBlue           = isBlue;
-        this.firingMode       = firingMode;
-        this.headingMode      = headingMode;
-        this.piecewiseHeading = null;
-        addRequirements(robot.flywheel, robot.conveyor);
+    /** Bezier curve, piecewise heading. */
+    public MoveAndShoot(Follower follower, Pose[] waypoints,
+                        int ballsToFire, double overrideVelocity,
+                        boolean isBlue, Shoot.FiringMode firingMode,
+                        PiecewiseHeading piecewiseHeading) {
+        addCommands(
+                new WindUpAndDrive(follower, waypoints, overrideVelocity, piecewiseHeading, 1.0),
+                new Shoot(follower, ballsToFire, overrideVelocity, isBlue, firingMode)
+        );
     }
+    // ─── Enum converters ─────────────────────────────────────────────────────
 
-    /** Full constructor — explicit velocity, firing mode, and piecewise heading. */
-    public MoveAndShoot(Follower follower, Pose targetPose, int ballsToFire,
-                        double overrideVelocity, boolean isBlue, FiringMode firingMode, PiecewiseHeading piecewiseHeading) {
-        this.follower         = follower;
-        this.targetPose       = targetPose;
-        this.ballsToFire      = ballsToFire;
-        this.overrideVelocity = overrideVelocity;
-        this.isBlue           = isBlue;
-        this.firingMode       = firingMode;
-        this.headingMode      = null;
-        this.piecewiseHeading = piecewiseHeading;
-        addRequirements(robot.flywheel, robot.conveyor);
-    }
-
-    // ─── Lifecycle ────────────────────────────────────────────────────────────
-
-    @Override
-    public void initialize() {
-        shotsFired  = 0;
-        detector    = new BallDetector();
-        spinUpStart = System.currentTimeMillis();
-        drainStart   = 0;
-        lastBallTime = 0;
-        state        = State.DRIVING;
-
-        spinUpFlywheel();
-
-        Pose from = follower.getPose();
-        Path pathObj = new Path(new BezierLine(from, targetPose));
-        applyHeading(pathObj, from);
-        PathChain path = follower.pathBuilder()
-                .addPath(pathObj)
-                .setTimeoutConstraint(300)
-                .build();
-
-        follower.followPath(path, 1.0, true);
-    }
-
-    @Override
-    public void execute() {
-        spinUpFlywheel();
-
-        switch (state) {
-
-            case DRIVING:
-                if (!follower.isBusy()) {
-                    spinUpStart = System.currentTimeMillis();
-                    state = State.SPINNING;
-                }
-                break;
-
-            case SPINNING:
-                boolean ready    = robot.flywheel.atTarget();
-                boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
-
-                if (ready || timedOut) {
-                    robot.conveyor.feed();
-                    state = State.FEEDING;
-                }
-                break;
-
-            case FEEDING:
-                if (lastBallTime == 0) lastBallTime = System.currentTimeMillis();
-
-                if (System.currentTimeMillis() - lastBallTime > NO_BALL_TIMEOUT_MS) {
-                    drainStart = System.currentTimeMillis();
-                    state = State.DRAINING;
-                    break;
-                }
-
-                if (detector.update()) {
-                    shotsFired++;
-                    lastBallTime = System.currentTimeMillis();
-                    if (shotsFired >= ballsToFire) {
-                        drainStart = System.currentTimeMillis();
-                        state = State.DRAINING;
-                    } else if (firingMode == FiringMode.PACED) {
-                        robot.conveyor.stop();
-                        spinUpStart = System.currentTimeMillis();
-                        state = State.RECOVERING;
-                    }
-                }
-                break;
-
-            case RECOVERING:
-                boolean recovered   = robot.flywheel.atTarget();
-                boolean recTimedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
-
-                if (recovered || recTimedOut) {
-                    lastBallTime = System.currentTimeMillis(); // reset clock on re-entry
-                    robot.conveyor.feed();
-                    state = State.FEEDING;
-                }
-                break;
-
-            case DRAINING:
-                if (System.currentTimeMillis() - drainStart >= POST_SHOT_DRAIN_MS) {
-                    robot.conveyor.stop();
-                    robot.flywheel.off();
-                    state = State.DONE;
-                }
-                break;
-
-            case DONE:
-                break;
-        }
-    }
-
-    @Override
-    public boolean isFinished() {
-        return state == State.DONE;
-    }
-
-    @Override
-    public void end(boolean interrupted) {
-        robot.conveyor.stop();
-        if (interrupted) robot.flywheel.off();
-    }
-
-    // ─── Helpers ──────────────────────────────────────────────────────────────
-
-    private void applyHeading(Path path, Pose from) {
-        if (piecewiseHeading != null) {
-            path.setHeadingInterpolation(piecewiseHeading.build());
-            return;
-        }
-        if (headingMode == null) return;
-        switch (headingMode) {
-            case TANGENTIAL:
-                path.setTangentHeadingInterpolation();
-                break;
-            case TANGENTIAL_REV:
-                path.setTangentHeadingInterpolation();
-                path.reverseHeadingInterpolation();
-                break;
-            case LINEAR:
-            default:
-                path.setLinearHeadingInterpolation(from.getHeading(), targetPose.getHeading());
-                break;
-        }
-    }
-
-    private void spinUpFlywheel() {
-        if (overrideVelocity > 0) {
-            robot.flywheel.setVelocity(overrideVelocity);
-        } else {
-            robot.flywheel.setVelocityForDistance(distanceToGoal());
-        }
-    }
-
-    private double distanceToGoal() {
-        Pose goal = Poses.goal(isBlue);
-        double dx = goal.getX() - follower.getPose().getX();
-        double dy = goal.getY() - follower.getPose().getY();
-        return Math.hypot(dx, dy);
-    }
 }
