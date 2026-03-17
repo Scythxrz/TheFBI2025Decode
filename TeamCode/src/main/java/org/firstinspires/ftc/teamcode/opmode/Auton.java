@@ -246,7 +246,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
-                new MoveAndShoot(follower, FAR_SCORE, 3, 2400, isBlue, PACED, LINEAR),
+                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
@@ -272,7 +272,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
-                new MoveAndShoot(follower, FAR_SCORE, 3, 2400, isBlue, PACED, LINEAR),
+                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
                 // Blob detect
                 blob(),
                 // Score 3
@@ -309,7 +309,7 @@ public class Auton extends CommandOpMode {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
-                        new SetIntake(MotorState.REVERSE),
+                        new SetIntake(MotorState.FORWARD),
                         new InstantCommand(() -> robot.conveyor.forward()),
                         new DriveToPose(follower, p(to), TANGENTIAL, 1)
                 ),
@@ -320,7 +320,7 @@ public class Auton extends CommandOpMode {
         return new SequentialCommandGroup(
                 new DriveToPose(follower, p(FAR_VISION), LINEAR),
                 new ParallelCommandGroup(
-                        new DriveToBlobs(follower, isBlue, FAR_HP),
+                        new DriveToBlobs(follower, isBlue, p(FAR_HP)),
                     new SetIntake(Intake.MotorState.FORWARD),
                     new InstantCommand(() -> robot.conveyor.forward())
                 )
@@ -337,6 +337,7 @@ public class Auton extends CommandOpMode {
                         new InstantCommand(() -> robot.conveyor.forward()),
                         new DriveToPose(follower, p(new Pose[]{CLOSE_GATE, CLOSE_GATE_1}), toGate, 1.0)
                 ),
+                new WaitCommand(1000),
                 new SetIntake(Intake.MotorState.STOP)
         );
     }

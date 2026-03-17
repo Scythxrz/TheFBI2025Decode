@@ -175,10 +175,9 @@ public class Teleop extends CommandOpMode {
         driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
                 new SequentialCommandGroup(
                         new SetIntake(Intake.MotorState.REVERSE),
-                        new WaitCommand(250),
+                        new WaitCommand(50),
                         new SetIntake(Intake.MotorState.FORWARD),
-                        new WaitCommand(250),
-                        new SetIntake(Intake.MotorState.STOP)
+                        new WaitCommand(50)
                 )
         );
     }

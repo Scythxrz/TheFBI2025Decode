@@ -24,6 +24,8 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
  *   Pass velocityFF = true to apply recessional velocity feed-forward (for shoot-while-moving).
  *
  * ── Timeout behaviour ─────────────────────────────────────────────────────────
+ *   HEADING_SETTLE_MS  — heading must be within AIM_ANGLE_TOLERANCE for this long before firing.
+ *   HEADING_TIMEOUT_MS — if heading never settles after this long, fire anyway.
  *   SPIN_UP_TIMEOUT_MS — if flywheel hasn't reached target after this long, fire anyway.
  *   NO_BALL_TIMEOUT_MS — if no ball is detected within this window after the last one
  *                        (or since feeding started), stop and move on. Handles under-loaded magazines.
@@ -44,7 +46,7 @@ public class Shoot extends CommandBase {
 
     public enum FiringMode { RAPID, PACED }
 
-    private enum State { SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
+    private enum State { SETTLING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
     private State state;
 
     private final Follower   follower;
@@ -54,16 +56,20 @@ public class Shoot extends CommandBase {
     private final FiringMode firingMode;
     private final boolean    velocityFF;       // true = recessional FF for shoot-while-moving
 
-    private static final long SPIN_UP_TIMEOUT_MS = 2000;
-    private static final long POST_SHOT_DRAIN_MS = 150;
-    private static final long NO_BALL_TIMEOUT_MS = 800;
+    private static final long SPIN_UP_TIMEOUT_MS   = 2000;
+    private static final long POST_SHOT_DRAIN_MS   = 150;
+    private static final long NO_BALL_TIMEOUT_MS   = 800;
+    private static final long HEADING_SETTLE_MS    = 150;  // how long heading must be stable before firing
+    private static final long HEADING_TIMEOUT_MS   = 750;  // give up waiting for heading after this long
 
     private final Robot robot = Robot.getInstance();
     private int          shotsFired   = 0;
     private BallDetector detector;
-    private long spinUpStart  = 0;
-    private long drainStart   = 0;
-    private long lastBallTime = 0;
+    private long spinUpStart        = 0;
+    private long drainStart         = 0;
+    private long lastBallTime       = 0;
+    private long headingSettleStart = 0; // when heading first came within tolerance
+    private long headingTimerStart  = 0; // when SETTLING state began
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
@@ -99,7 +105,9 @@ public class Shoot extends CommandBase {
         spinUpStart  = System.currentTimeMillis();
         drainStart   = 0;
         lastBallTime = 0;
-        state        = State.SPINNING;
+        state             = State.SETTLING;
+        headingSettleStart = 0;
+        headingTimerStart  = System.currentTimeMillis();
         updateFlywheel();
     }
 
@@ -108,6 +116,27 @@ public class Shoot extends CommandBase {
         updateFlywheel();
 
         switch (state) {
+
+            case SETTLING:
+                boolean headingOk = headingError() < Constants.AIM_ANGLE_TOLERANCE;
+                boolean headingTimedOut = System.currentTimeMillis() - headingTimerStart > HEADING_TIMEOUT_MS;
+
+                if (headingOk) {
+                    if (headingSettleStart == 0) headingSettleStart = System.currentTimeMillis();
+                    // Must stay within tolerance for HEADING_SETTLE_MS before proceeding
+                    if (System.currentTimeMillis() - headingSettleStart >= HEADING_SETTLE_MS) {
+                        spinUpStart = System.currentTimeMillis();
+                        state = State.SPINNING;
+                    }
+                } else {
+                    headingSettleStart = 0; // reset — heading drifted back out
+                    if (headingTimedOut) {
+                        // Heading never settled — fire anyway
+                        spinUpStart = System.currentTimeMillis();
+                        state = State.SPINNING;
+                    }
+                }
+                break;
 
             case SPINNING:
                 boolean ready    = robot.flywheel.atTarget();
@@ -187,6 +216,21 @@ public class Shoot extends CommandBase {
         } else {
             robot.flywheel.setVelocityForDistance(distanceToGoal());
         }
+    }
+
+    /** Absolute heading error between current robot heading and the angle to the goal (radians). */
+    private double headingError() {
+        Pose goal = Poses.goal(isBlue);
+        Pose pos  = follower.getPose();
+        double targetHeading = Math.atan2(
+                goal.getX() - pos.getX(),
+                goal.getY() - pos.getY()
+        );
+        double error = targetHeading - pos.getHeading();
+        // Normalize to [-π, π]
+        while (error >  Math.PI) error -= 2 * Math.PI;
+        while (error < -Math.PI) error += 2 * Math.PI;
+        return Math.abs(error);
     }
 
     private double distanceToGoal() {
