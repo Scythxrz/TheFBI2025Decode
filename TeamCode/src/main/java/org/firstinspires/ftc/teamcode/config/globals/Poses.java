@@ -26,10 +26,8 @@ public class Poses {
     // ─── Close-side sequences ─────────────────────────────────────────────────
 
     public static final Pose CLOSE_SCORE = new Pose(50.99, 77, rad(308));
-    public static final Pose CLOSE_TOSCORE = new Pose(50.99, 79, rad(308));
     public static final Pose CLOSE_END   = new Pose(54.853,   102.53, rad(320));
-    public static final Pose CLOSE_TOEND = new Pose(54.853,   102.53, rad(320));
-    public static final Pose CLOSE_PGP   = new Pose(15,   65);
+    public static final Pose CLOSE_PGP   = new Pose(15,   63);
     public static final Pose CLOSE_PGP_1 = new Pose(35.292, 55.076);
     public static final Pose CLOSE_GATE = new Pose(8.5, 58.8);
     public static final Pose CLOSE_GATE_1 = new Pose(24.811, 47.537);
@@ -41,10 +39,8 @@ public class Poses {
     // ─── Far-side sequences ───────────────────────────────────────────────────
     public static final Pose FAR_SCORE  = new Pose(57.5,   15,    rad(290));
     public static final Pose FAR_END    = new Pose(40.5,    8,    rad(270));
-    public static final Pose FAR_LOAD_1 = new Pose(15,     20,    rad(210));
-    public static final Pose FAR_LOAD_2 = new Pose(15,     10,    rad(210));
-    public static final Pose FAR_LOAD_3 = new Pose(35,     15,    rad(215));
-    public static final Pose FAR_LOAD_4 = new Pose(12,      9,    rad(180));
+    public static final Pose FAR_VISION = new Pose(45,     15,    rad(180));
+    public static final Pose FAR_HP = new Pose(12,      9,    rad(180));
 
     /** Far-side GPP intake variation */
     public static final Pose FAR_GPP_MID     = new Pose(46.802, 32.6, rad(180));

@@ -10,20 +10,18 @@ import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.seattlesolvers.solverslib.command.Command;
 import com.seattlesolvers.solverslib.command.CommandOpMode;
 import com.seattlesolvers.solverslib.command.InstantCommand;
 import com.seattlesolvers.solverslib.command.ParallelCommandGroup;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 import com.seattlesolvers.solverslib.command.WaitCommand;
 
+import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToBlobs;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
-import org.firstinspires.ftc.teamcode.config.commandbase.commands.Shoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.ShootWhileMoving;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.PiecewiseHeading;
-import org.firstinspires.ftc.teamcode.config.commandbase.commands.WindUpAndDrive;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
@@ -74,7 +72,7 @@ public class Auton extends CommandOpMode {
 
     // ─── Menu ─────────────────────────────────────────────────────────────────
     private enum StartPos { CLOSE, FAR }
-    private enum Sequence { ALLIANCE, NO_ALLIANCE }
+    private enum Sequence { ALLIANCE, NO_ALLIANCE, FAR, FAR_GPP }
 
     private StartPos selectedStart    = StartPos.CLOSE;
     private Sequence selectedSequence = Sequence.NO_ALLIANCE;
@@ -242,6 +240,58 @@ public class Auton extends CommandOpMode {
         );
     }
 
+    private SequentialCommandGroup buildFarGPP() {
+        PiecewiseHeading piecewiseScore = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+        return new SequentialCommandGroup(
+                // Shoot preloads
+                new MoveAndShoot(follower, FAR_SCORE, 3, 2400, isBlue, PACED, LINEAR),
+                // Pick up GPP Spike Mark
+                intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore)
+        );
+    }
+
+    private SequentialCommandGroup buildFar() {
+        PiecewiseHeading piecewiseScore = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+        return new SequentialCommandGroup(
+                // Shoot preloads
+                new MoveAndShoot(follower, FAR_SCORE, 3, 2400, isBlue, PACED, LINEAR),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore),
+                // Blob detect
+                blob(),
+                // Score 3
+                shoot(CLOSE_END, 3, 2400, piecewiseScore)
+        );
+    }
+
     // ═══════════════════════════════════════════════════════════════════════════
     // Helper methods
     // ═══════════════════════════════════════════════════════════════════════════
@@ -266,7 +316,16 @@ public class Auton extends CommandOpMode {
                 new SetIntake(MotorState.STOP)
         );
     }
-
+    private SequentialCommandGroup blob() {
+        return new SequentialCommandGroup(
+                new DriveToPose(follower, p(FAR_VISION), LINEAR),
+                new ParallelCommandGroup(
+                        new DriveToBlobs(follower, isBlue, FAR_HP),
+                    new SetIntake(Intake.MotorState.FORWARD),
+                    new InstantCommand(() -> robot.conveyor.forward())
+                )
+        );
+    }
     private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
