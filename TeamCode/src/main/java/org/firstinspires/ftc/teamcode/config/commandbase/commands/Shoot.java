@@ -59,7 +59,7 @@ public class Shoot extends CommandBase {
     private static final long SPIN_UP_TIMEOUT_MS   = 2000;
     private static final long POST_SHOT_DRAIN_MS   = 150;
     private static final long NO_BALL_TIMEOUT_MS   = 800;
-    private static final long HEADING_SETTLE_MS    = 150;  // how long heading must be stable before firing
+    private static final long HEADING_SETTLE_MS    = 50;  // how long heading must be stable before firing
     private static final long HEADING_TIMEOUT_MS   = 750;  // give up waiting for heading after this long
 
     private final Robot robot = Robot.getInstance();

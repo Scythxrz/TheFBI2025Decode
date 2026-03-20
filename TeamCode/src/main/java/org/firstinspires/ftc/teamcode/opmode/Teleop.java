@@ -172,6 +172,7 @@ public class Teleop extends CommandOpMode {
         );
         
         // Y - unjam intake
+        /*
         driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
                 new SequentialCommandGroup(
                         new SetIntake(Intake.MotorState.REVERSE),
@@ -179,7 +180,7 @@ public class Teleop extends CommandOpMode {
                         new SetIntake(Intake.MotorState.FORWARD),
                         new WaitCommand(50)
                 )
-        );
+        );*/
     }
 
     // ─── initialize_loop() ────────────────────────────────────────────────────

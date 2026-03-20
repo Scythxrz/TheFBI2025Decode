@@ -297,7 +297,7 @@ public class Auton extends CommandOpMode {
     // ═══════════════════════════════════════════════════════════════════════════
 
     private ShootWhileMoving swm(Pose to, int balls, double vel, DriveToPose.HeadingMode hm) {
-        return new ShootWhileMoving(follower, p(to), balls, vel, isBlue, RAPID, hm);
+        return new ShootWhileMoving(follower, p(to), balls, vel, isBlue, PACED, hm);
     }
     private MoveAndShoot shoot(Pose to, int balls, double vel, PiecewiseHeading hm) {
         return new MoveAndShoot(follower, p(to), balls, vel, isBlue, RAPID, hm);
