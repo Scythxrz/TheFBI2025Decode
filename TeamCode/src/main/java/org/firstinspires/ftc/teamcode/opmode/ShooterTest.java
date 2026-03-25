@@ -57,8 +57,8 @@ import java.util.Objects;
  *   so localization continues from where Auto left off.
  */
 @Configurable
-@TeleOp(name = "TeleOp", group = "AAATeleOp")
-public class Teleop extends CommandOpMode {
+@TeleOp(name = "Shooter", group = "AAATeleOp")
+public class ShooterTest extends CommandOpMode {
 
     // ─── Gamepad wrappers ─────────────────────────────────────────────────────
     private GamepadEx driver;
@@ -106,39 +106,14 @@ public class Teleop extends CommandOpMode {
 
         robot.init(hardwareMap);
 
-
         driver   = new GamepadEx(gamepad1);
         operator = new GamepadEx(gamepad2);
 
-        // ── Driver button bindings ──────────────────────────────────────────
-
-        // Toggle heading lock (aim toward goal)
-        driver.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(
-                new InstantCommand(() -> headingLock = !headingLock)
-        );
-        /*
-        // Auto-park
-        driver.getGamepadButton(GamepadKeys.Button.B).whenPressed(
-                new InstantCommand(() -> {
-                    if (follower != null) follower.setPose(toPose(PARK_POSE));
-                })
-        );
-
-        // Reset pose — Blue side
-        driver.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(
-                new InstantCommand(() -> follower.setPose(toPose(RESET_BLUE)))
-        );
-
-        // Reset pose — Red side
-        driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
-                new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
-        );
-        */
         // ── Operator button bindings ────────────────────────────────────────
 
         // Y — RAPID fire (gate stays open between balls — close range)
         driver.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
-                new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.RAPID)
+                new InstantCommand(() -> robot.flywheel.setPower(1))
         );
         driver.getGamepadButton(GamepadKeys.Button.Y).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
@@ -171,7 +146,7 @@ public class Teleop extends CommandOpMode {
         operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
         );
-        
+
         // Y - unjam intake
         /*
         driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
@@ -242,7 +217,6 @@ public class Teleop extends CommandOpMode {
         // ── Pedro update ──────────────────────────────────────────────────────
         follower.update();
 
-
         // ── Compute aim geometry ──────────────────────────────────────────────
         double dx = goalPose[0] - follower.getPose().getX();
         double dy = goalPose[1] - follower.getPose().getY();
@@ -267,7 +241,7 @@ public class Teleop extends CommandOpMode {
                 -gamepad1.left_stick_y * invert,
                 -gamepad1.left_stick_x * invert,
                 turnPower,
-                false
+                true
         );
 
         // ── Telemetry ─────────────────────────────────────────────────────────

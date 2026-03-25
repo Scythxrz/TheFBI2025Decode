@@ -25,7 +25,7 @@ public class Poses {
 
     // ─── Close-side sequences ─────────────────────────────────────────────────
 
-    public static final Pose CLOSE_SCORE = new Pose(50.99, 77, rad(308));
+    public static final Pose CLOSE_SCORE = new Pose(51.5, 77, rad(308));
     public static final Pose CLOSE_END   = new Pose(54.853,   102.53, rad(320));
     public static final Pose CLOSE_PGP   = new Pose(13,   63);
     public static final Pose CLOSE_PGP_1 = new Pose(35.292, 55.076);
@@ -59,16 +59,17 @@ public class Poses {
     public static Pose forAlliance(Pose pose, boolean isBlue) {
         return isBlue ? pose : pose.mirror();
     }
-    public static Pose[] forAlliance(Pose[] pose, boolean isBlue) {
-        for(int poses = 0; poses < pose.length; poses++) {
-            pose[poses] = forAlliance(pose[poses], isBlue);
+    public static Pose[] forAlliance(Pose[] poses, boolean isBlue) {
+        Pose[] result = new Pose[poses.length];
+        for (int i = 0; i < poses.length; i++) {
+            result[i] = forAlliance(poses[i], isBlue);
         }
-        return pose;
+        return result;
     }
 
-    /**
-     * Returns the correct goal pose for the current alliance.
-     */
+        /**
+         * Returns the correct goal pose for the current alliance.
+         */
     public static Pose goal(boolean isBlue) {
         return isBlue ? GOAL_BLUE : GOAL_RED;
     }

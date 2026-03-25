@@ -89,7 +89,6 @@ public class Auton extends CommandOpMode {
 
         robot.init(hardwareMap);
         follower = PedroConstants.createFollower(hardwareMap);
-        follower.setStartingPose(startPose());
         RobotDrawing.init();
         // Sequence is scheduled in run() on first tick — not here —
         // so the flywheel doesn't spin up during init_loop
@@ -125,7 +124,7 @@ public class Auton extends CommandOpMode {
         if (changed) {
             super.reset();
             sequenceScheduled = false; // re-schedule on next run() tick with updated selection
-            follower.setStartingPose(startPose());
+            follower.setStartingPose(p(startPose()));
         }
 
         telemetryM.addData("Alliance",  isBlue ? "BLUE" : "RED");
@@ -134,7 +133,6 @@ public class Auton extends CommandOpMode {
         telemetryM.addLine("↑↓ sequence  |  ← alliance  |  → start side");
         telemetryM.update();
     }
-
     // ─── run() ────────────────────────────────────────────────────────────────
     private boolean sequenceScheduled = false;
 
@@ -142,6 +140,7 @@ public class Auton extends CommandOpMode {
     public void run() {
         if (!sequenceScheduled) {
             sequenceScheduled = true;
+            follower.setPose(startPose());
             schedule(buildSequence());
         }
 
@@ -155,6 +154,7 @@ public class Auton extends CommandOpMode {
         telemetryM.addData("Flywheel",  robot.flywheel.getVelocity());
         telemetryM.addData("FW Target", robot.flywheel.getTargetVelocity());
         telemetryM.addData("FW Ready",  robot.flywheel.atTarget());
+        telemetryM.addData("Start Pose", startPose());
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
@@ -182,7 +182,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildAlliance() {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
                 swm(CLOSE_SCORE, 3, 2000, LINEAR),
@@ -213,7 +213,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildNoAlliance() {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
                 swm(CLOSE_SCORE, 3, 2000, LINEAR),
@@ -243,7 +243,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildFarGPP() {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
                 new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
@@ -269,7 +269,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup buildFar() {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .facingAwayFromPoint(0.6, 1.0, GOAL_BLUE.getX(), GOAL_BLUE.getY());  // back of robot faces goal for last 40%
+                .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
                 new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
@@ -329,7 +329,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
-                .linear(0.6, 1.0, Math.toRadians(120), Math.toRadians(160));
+                .linear(0.6, 1.0, Math.toRadians(mirror(120)), Math.toRadians(mirror(160)));
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
@@ -350,7 +350,10 @@ public class Auton extends CommandOpMode {
     private Pose[] p(Pose[] pose) {
         return Poses.forAlliance(pose, isBlue);
     }
-
+    private double mirrorHeading(double deg) {
+        double rad = Math.toRadians(deg);
+        return isBlue ? rad : Math.PI - rad;
+    }
     private Pose startPose() {
         return p(selectedStart == StartPos.CLOSE ? START_CLOSE : START_FAR);
     }

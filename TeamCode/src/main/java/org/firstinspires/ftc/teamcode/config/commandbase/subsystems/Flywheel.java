@@ -44,6 +44,11 @@ public class Flywheel extends SubsystemBase {
         robot.shooterMotor.setVelocity(ticksPerSecond);
     }
 
+    public void setPower(double power) {
+        //robot.shooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        robot.shooterMotor.setPower(power);
+    }
+
     /**
      * Spin up using the shooter lookup table to convert a field distance (inches)
      * into the correct target velocity.  Applies half-weight voltage compensation
