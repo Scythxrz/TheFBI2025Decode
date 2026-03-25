@@ -329,7 +329,7 @@ public class Auton extends CommandOpMode {
     private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
                 .tangent(0.0, 0.6)
-                .linear(0.6, 1.0, Math.toRadians(mirror(120)), Math.toRadians(mirror(160)));
+                .linear(0.6, 1.0, mirror(120), mirror(160));
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
@@ -350,7 +350,7 @@ public class Auton extends CommandOpMode {
     private Pose[] p(Pose[] pose) {
         return Poses.forAlliance(pose, isBlue);
     }
-    private double mirrorHeading(double deg) {
+    private double mirror(double deg) {
         double rad = Math.toRadians(deg);
         return isBlue ? rad : Math.PI - rad;
     }

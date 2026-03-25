@@ -222,12 +222,12 @@ public class Shoot extends CommandBase {
     private double headingError() {
         Pose goal = Poses.goal(isBlue);
         Pose pos  = follower.getPose();
+        // +π because the back of the robot faces the goal (rear-mounted shooter)
         double targetHeading = Math.atan2(
                 goal.getX() - pos.getX(),
                 goal.getY() - pos.getY()
-        );
+        ) + Math.PI;
         double error = targetHeading - pos.getHeading();
-        // Normalize to [-π, π]
         while (error >  Math.PI) error -= 2 * Math.PI;
         while (error < -Math.PI) error += 2 * Math.PI;
         return Math.abs(error);

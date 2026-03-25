@@ -116,15 +116,35 @@ public class ShooterTest extends CommandOpMode {
                 new InstantCommand(() -> robot.flywheel.setPower(1))
         );
         driver.getGamepadButton(GamepadKeys.Button.Y).whenReleased(
-                new SetIntake(Intake.MotorState.STOP)
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> robot.flywheel.off()),
+                    new SetIntake(Intake.MotorState.STOP)
+                )
         );
-        // A — PACED fire (gate closes between balls for flywheel recovery — far range)
+
+        driver.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whileActiveContinuous(
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> robot.gate.open()),
+                    new InstantCommand(()-> robot.conveyor.forward()),
+                    new InstantCommand(() -> robot.intake.forward())
+                )
+        );
+
+        driver.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenReleased(
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> robot.gate.close()),
+                    new InstantCommand(()-> robot.conveyor.stop()),
+                    new InstantCommand(() -> robot.intake.stop())
+                )
+        );
+
+        /*// A — PACED fire (gate closes between balls for flywheel recovery — far range)
         driver.getGamepadButton(GamepadKeys.Button.A).whileActiveContinuous(
                 new LaunchSequence(() -> distanceToGoal, () -> headingError, LaunchSequence.FiringMode.PACED)
         );
         driver.getGamepadButton(GamepadKeys.Button.A).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
-        );
+        );*/
         // X — intake forward
         driver.getGamepadButton(GamepadKeys.Button.RIGHT_BUMPER).whenPressed(
                 new ParallelCommandGroup(
@@ -238,8 +258,8 @@ public class ShooterTest extends CommandOpMode {
         }
 
         follower.setTeleOpDrive(
-                -gamepad1.left_stick_y * invert,
-                -gamepad1.left_stick_x * invert,
+                gamepad1.left_stick_y * invert,
+                gamepad1.left_stick_x * invert,
                 turnPower,
                 true
         );
