@@ -328,8 +328,8 @@ public class Auton extends CommandOpMode {
     }
     private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
-                .tangent(0.0, 0.6)
-                .lazyLinearShortest(0.6, 1.0, () -> follower.getPose().getHeading(), mirror(160));
+            .tangent(0.0, 0.6)
+            .linear(0.6, 1.0, p(CLOSE_GATE_1).getHeading(), p(CLOSE_GATE).getHeading());
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
