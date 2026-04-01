@@ -128,7 +128,6 @@ public class DriveToPose extends CommandBase {
 
         PathChain chain = follower.pathBuilder()
                 .addPath(pathObj)
-                .setTimeoutConstraint(500)
                 .build();
 
         follower.followPath(chain, maxSpeed, true);

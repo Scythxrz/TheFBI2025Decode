@@ -56,10 +56,10 @@ public class Shoot extends CommandBase {
     private final FiringMode firingMode;
     private final boolean    velocityFF;       // true = recessional FF for shoot-while-moving
 
-    private static final long SPIN_UP_TIMEOUT_MS   = 2000;
+    private static final long SPIN_UP_TIMEOUT_MS   = 1000;
     private static final long POST_SHOT_DRAIN_MS   = 150;
     private static final long NO_BALL_TIMEOUT_MS   = 800;
-    private static final long HEADING_SETTLE_MS    = 50;  // how long heading must be stable before firing
+    private static final long HEADING_SETTLE_MS    = 0;  // how long heading must be stable before firing
     private static final long HEADING_TIMEOUT_MS   = 750;  // give up waiting for heading after this long
 
     private final Robot robot = Robot.getInstance();
@@ -222,12 +222,16 @@ public class Shoot extends CommandBase {
     private double headingError() {
         Pose goal = Poses.goal(isBlue);
         Pose pos  = follower.getPose();
-        // +π because the back of the robot faces the goal (rear-mounted shooter)
         double targetHeading = Math.atan2(
                 goal.getX() - pos.getX(),
                 goal.getY() - pos.getY()
         ) + Math.PI;
-        double error = targetHeading - pos.getHeading();
+
+        // Normalize both angles to (-π, π] before differencing
+        // to avoid wrap-around issues near ±π boundary on Red
+        double th = ((targetHeading + Math.PI) % (2 * Math.PI)) - Math.PI;
+        double ph = ((pos.getHeading() + Math.PI) % (2 * Math.PI)) - Math.PI;
+        double error = th - ph;
         while (error >  Math.PI) error -= 2 * Math.PI;
         while (error < -Math.PI) error += 2 * Math.PI;
         return Math.abs(error);

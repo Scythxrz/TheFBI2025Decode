@@ -185,7 +185,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                swm(CLOSE_SCORE, 3, 2000, LINEAR),
+                swm(CLOSE_SCORE, 3, 1850, LINEAR),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
@@ -216,7 +216,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                swm(CLOSE_SCORE, 3, 2000, LINEAR),
+                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
@@ -300,6 +300,9 @@ public class Auton extends CommandOpMode {
         return new ShootWhileMoving(follower, p(to), balls, vel, isBlue, PACED, hm);
     }
     private MoveAndShoot shoot(Pose to, int balls, double vel, PiecewiseHeading hm) {
+        return new MoveAndShoot(follower, p(to), balls, vel, isBlue, RAPID, hm);
+    }
+    private MoveAndShoot shoot(Pose to, int balls, double vel, DriveToPose.HeadingMode hm) {
         return new MoveAndShoot(follower, p(to), balls, vel, isBlue, RAPID, hm);
     }
     private WaitCommand wait(double s) {
