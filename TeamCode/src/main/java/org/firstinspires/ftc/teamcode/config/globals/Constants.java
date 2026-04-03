@@ -35,7 +35,7 @@ public class Constants {
      *   kD  — usually left at 0 for flywheels
      *   kF  — feedforward (~11 is a common starting point for NeveRest / GoBILDA)
      */
-    public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 11);
+    public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 10);
 
     // How close the flywheel needs to be to targetVelocity before feeding starts.
     // Wider = shoots sooner at the cost of slightly reduced accuracy.

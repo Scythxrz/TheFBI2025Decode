@@ -28,6 +28,8 @@ public class Conveyor extends SubsystemBase {
     private ConveyorState state         = ConveyorState.STOPPED;
     private final Timer   feedTimer     = new Timer();
     private boolean       feedTimerStarted = false;
+    private int loops = 0;
+    private long feedStartTime = System.currentTimeMillis();;
 
     // ─── Public API ───────────────────────────────────────────────────────────
 
@@ -38,8 +40,7 @@ public class Conveyor extends SubsystemBase {
     public void feed() {
         if (state != ConveyorState.FEEDING) {
             state            = ConveyorState.FEEDING;
-            feedTimerStarted = false;
-            feedTimer.resetTimer();
+            feedStartTime = System.currentTimeMillis(); // ← reliable ms
             robot.stopperServo.setPosition(STOPPER_OPEN);
             robot.intake.setIntake(Intake.MotorState.FORWARD);
         }
@@ -71,18 +72,15 @@ public class Conveyor extends SubsystemBase {
 
     public ConveyorState getState() { return state; }
 
+    public int getLoops() { return loops; }
+
     // ─── Periodic ─────────────────────────────────────────────────────────────
 
     @Override
     public void periodic() {
         if (state == ConveyorState.FEEDING) {
-            if (!feedTimerStarted) {
-                feedTimer.resetTimer();
-                feedTimerStarted = true;
-            }
-            // Brief delay after gate opens before spinning belt,
-            // so the ball is fully clear of the gate before it starts moving
-            if (feedTimer.getElapsedTime() > CONVEYOR_FEED_DELAY_MS) {
+            loops += 1;
+            if (System.currentTimeMillis() - feedStartTime > CONVEYOR_FEED_DELAY_MS) {
                 robot.conveyorMotor.set(CONVEYOR_FORWARD_SPEED);
             }
         }

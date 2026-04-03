@@ -1,9 +1,14 @@
 package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 
+import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
+
+import com.bylazar.telemetry.JoinedTelemetry;
+import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.CommandBase;
 
+import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.globals.Constants;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
@@ -46,9 +51,10 @@ public class Shoot extends CommandBase {
 
     public enum FiringMode { RAPID, PACED }
 
-    private enum State { SETTLING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
+    public enum State { SETTLING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
     private State state;
 
+    private Telemetry telemetry;
     private final Follower   follower;
     private final int        ballsToFire;
     private final double     overrideVelocity; // <= 0 means use distance LUT
@@ -56,20 +62,22 @@ public class Shoot extends CommandBase {
     private final FiringMode firingMode;
     private final boolean    velocityFF;       // true = recessional FF for shoot-while-moving
 
-    private static final long SPIN_UP_TIMEOUT_MS   = 1000;
+    private static final long SPIN_UP_TIMEOUT_MS   = 0;
     private static final long POST_SHOT_DRAIN_MS   = 150;
     private static final long NO_BALL_TIMEOUT_MS   = 800;
-    private static final long HEADING_SETTLE_MS    = 0;  // how long heading must be stable before firing
-    private static final long HEADING_TIMEOUT_MS   = 750;  // give up waiting for heading after this long
+    private static final long HEADING_SETTLE_MS    = 500;  // how long heading must be stable before firing
+    private static final long HEADING_TIMEOUT_MS   = 500;  // give up waiting for heading after this long
 
     private final Robot robot = Robot.getInstance();
     private int          shotsFired   = 0;
+    private int loops = 0;
     private BallDetector detector;
     private long spinUpStart        = 0;
     private long drainStart         = 0;
     private long lastBallTime       = 0;
     private long headingSettleStart = 0; // when heading first came within tolerance
     private long headingTimerStart  = 0; // when SETTLING state began
+    private JoinedTelemetry telemetryM;
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
@@ -108,15 +116,17 @@ public class Shoot extends CommandBase {
         state             = State.SETTLING;
         headingSettleStart = 0;
         headingTimerStart  = System.currentTimeMillis();
+        telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
         updateFlywheel();
     }
 
     @Override
     public void execute() {
         updateFlywheel();
-
+        robot.flywheel.setState(state);
+        loops += 1;
+        robot.flywheel.setLoopVar(loops);
         switch (state) {
-
             case SETTLING:
                 boolean headingOk = headingError() < Constants.AIM_ANGLE_TOLERANCE;
                 boolean headingTimedOut = System.currentTimeMillis() - headingTimerStart > HEADING_TIMEOUT_MS;
@@ -148,6 +158,7 @@ public class Shoot extends CommandBase {
                 break;
 
             case FEEDING:
+                robot.conveyor.feed();
                 if (lastBallTime == 0) lastBallTime = System.currentTimeMillis();
 
                 if (System.currentTimeMillis() - lastBallTime > NO_BALL_TIMEOUT_MS) {
@@ -206,7 +217,6 @@ public class Shoot extends CommandBase {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
-
     private void updateFlywheel() {
         if (overrideVelocity > 0) {
             robot.flywheel.setVelocity(overrideVelocity);

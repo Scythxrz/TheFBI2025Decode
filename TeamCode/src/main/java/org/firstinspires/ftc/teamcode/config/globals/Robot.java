@@ -45,7 +45,6 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
 
     // Drive motors (Mecanum — names must match PedroConstants driveConstants motor names)
     public MotorEx rf, rr, lf, lr;
-
     // Shooting mechanism
     public DcMotorEx shooterMotor;       // "shooter"
     public Motor.Encoder shooterEncoder; // piggybacks on shooterMotor
@@ -128,6 +127,12 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
         flywheel = new Flywheel();
         gate     = new Gate();
         intake   = new Intake();
+    }
+
+    public void registerSubsystems() {
+        CommandScheduler.getInstance().registerSubsystem(
+                flywheel, conveyor, intake, gate // whatever subsystems Robot owns
+        );
     }
 
     // ─── Voltage helper ───────────────────────────────────────────────────────

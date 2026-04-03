@@ -126,6 +126,7 @@ public class DriveToPose extends CommandBase {
 
         applyHeading(pathObj, from);
 
+
         PathChain chain = follower.pathBuilder()
                 .addPath(pathObj)
                 .build();

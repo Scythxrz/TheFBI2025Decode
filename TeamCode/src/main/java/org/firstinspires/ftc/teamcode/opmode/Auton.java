@@ -123,6 +123,7 @@ public class Auton extends CommandOpMode {
 
         if (changed) {
             super.reset();
+            robot.registerSubsystems();
             sequenceScheduled = false; // re-schedule on next run() tick with updated selection
             follower.setStartingPose(p(startPose()));
         }
@@ -155,6 +156,10 @@ public class Auton extends CommandOpMode {
         telemetryM.addData("FW Target", robot.flywheel.getTargetVelocity());
         telemetryM.addData("FW Ready",  robot.flywheel.atTarget());
         telemetryM.addData("Start Pose", startPose());
+        telemetryM.addData("State", robot.flywheel.getState());
+        telemetryM.addData("Flywheel Loops", robot.flywheel.getLoop());
+        telemetryM.addData("Conveyor State", robot.conveyor.getState());
+        telemetryM.addData("Conveyor Loops", robot.conveyor.getLoops());
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
@@ -216,7 +221,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shoot(CLOSE_SCORE, 3, 1850, piecewiseScore),
+                shoot(CLOSE_SCORE, 3, 1850, LINEAR),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
@@ -272,7 +277,7 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
-                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
+                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, RAPID, LINEAR),
                 // Blob detect
                 blob(),
                 // Score 3

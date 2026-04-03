@@ -3,10 +3,10 @@ package org.firstinspires.ftc.teamcode.config.commandbase.subsystems;
 import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
 
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
+import org.firstinspires.ftc.teamcode.config.commandbase.commands.Shoot.State;
 
 /**
  * Flywheel subsystem — controls the shooter motor via PIDF velocity control.
@@ -20,10 +20,11 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
 public class Flywheel extends SubsystemBase {
 
     private final Robot robot = Robot.getInstance();
-
+    public int loops = 0;
     private double targetVelocity = 0;
     private double prevVelocity      = -1.0; // sentinel for ball detection
     private long   lastDetectionTime = 0;    // ms — cooldown after each ball count
+    private State state;
 
     // ─── Constructor ──────────────────────────────────────────────────────────
 
@@ -62,7 +63,18 @@ public class Flywheel extends SubsystemBase {
         setVelocity(compensated);
     }
 
-
+    public void setState(State state1) {
+        state = state1;
+    }
+    public void setLoopVar(int loop) {
+        loops = loop;
+    }
+    public int getLoop() {
+        return loops;
+    }
+    public State getState() {
+        return state;
+    }
     /**
      * Like setVelocityForDistance, but adds a velocity feedforward that compensates
      * for the robot moving away from the goal while shooting.

@@ -57,7 +57,7 @@ public class Poses {
      *   Pose shoot = Poses.forAlliance(Poses.SCORE_CLOSE, isBlue);
      */
     public static Pose forAlliance(Pose pose, boolean isBlue) {
-        return isBlue ? pose : pose.mirror(144);
+        return isBlue ? pose : pose.mirror(141.5);
     }
     public static Pose[] forAlliance(Pose[] poses, boolean isBlue) {
         Pose[] result = new Pose[poses.length];
