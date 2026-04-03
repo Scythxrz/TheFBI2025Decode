@@ -65,12 +65,11 @@ public class Shoot extends CommandBase {
     private static final long SPIN_UP_TIMEOUT_MS   = 0;
     private static final long POST_SHOT_DRAIN_MS   = 150;
     private static final long NO_BALL_TIMEOUT_MS   = 800;
-    private static final long HEADING_SETTLE_MS    = 500;  // how long heading must be stable before firing
-    private static final long HEADING_TIMEOUT_MS   = 500;  // give up waiting for heading after this long
+    private static final long HEADING_SETTLE_MS    = 350;  // how long heading must be stable before firing
+    private static final long HEADING_TIMEOUT_MS   = 350;  // give up waiting for heading after this long
 
     private final Robot robot = Robot.getInstance();
     private int          shotsFired   = 0;
-    private int loops = 0;
     private BallDetector detector;
     private long spinUpStart        = 0;
     private long drainStart         = 0;
@@ -123,9 +122,6 @@ public class Shoot extends CommandBase {
     @Override
     public void execute() {
         updateFlywheel();
-        robot.flywheel.setState(state);
-        loops += 1;
-        robot.flywheel.setLoopVar(loops);
         switch (state) {
             case SETTLING:
                 boolean headingOk = headingError() < Constants.AIM_ANGLE_TOLERANCE;

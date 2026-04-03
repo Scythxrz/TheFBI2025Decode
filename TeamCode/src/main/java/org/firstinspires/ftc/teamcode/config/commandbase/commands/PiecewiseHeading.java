@@ -62,7 +62,9 @@ public class PiecewiseHeading {
         return add(t0, t1, HeadingInterpolator.linear(fromRad, toRad));
     }
 
-
+    public PiecewiseHeading constant(double t0, double t1, double Rad) {
+        return add(t0, t1, HeadingInterpolator.constant(Rad));
+    }
     /**
      * Linear heading where the START angle is supplied lazily at build() time.
      * build() is called from DriveToPose.initialize() when the command actually

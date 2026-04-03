@@ -82,6 +82,7 @@ public class DriveToPose extends CommandBase {
         this(follower, waypoints, headingMode, 1.0);
     }
 
+
     /** Bezier curve, chosen heading mode, custom speed. */
     public DriveToPose(Follower follower, Pose[] waypoints, HeadingMode headingMode, double maxSpeed) {
         this.follower    = follower;

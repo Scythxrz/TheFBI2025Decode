@@ -156,10 +156,6 @@ public class Auton extends CommandOpMode {
         telemetryM.addData("FW Target", robot.flywheel.getTargetVelocity());
         telemetryM.addData("FW Ready",  robot.flywheel.atTarget());
         telemetryM.addData("Start Pose", startPose());
-        telemetryM.addData("State", robot.flywheel.getState());
-        telemetryM.addData("Flywheel Loops", robot.flywheel.getLoop());
-        telemetryM.addData("Conveyor State", robot.conveyor.getState());
-        telemetryM.addData("Conveyor Loops", robot.conveyor.getLoops());
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
