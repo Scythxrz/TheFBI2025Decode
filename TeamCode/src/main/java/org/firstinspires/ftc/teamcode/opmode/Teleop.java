@@ -20,6 +20,7 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.LaunchSequence;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
+import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 import static org.firstinspires.ftc.teamcode.config.globals.PedroConstants.createFollower;
@@ -85,8 +86,7 @@ public class Teleop extends CommandOpMode {
             new PIDFController(new com.pedropathing.control.PIDFCoefficients(1, 0, 0, 0.025));
 
     // Reset poses (field coordinates, Pedro system)
-    public static double[] RESET_BLUE = {32, 135, 270};
-    public static double[] RESET_RED  = {12,   8,  90};
+    public static double[] RESET_RED  = {9,   8,  90};
 
     // Park pose
     public static double[] PARK_POSE = {41.678, 29.632, 270};
@@ -171,7 +171,10 @@ public class Teleop extends CommandOpMode {
         operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
         );
-        
+        operator.getGamepadButton(GamepadKeys.Button.A).whenReleased(
+                new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
+        );
+
         // Y - unjam intake
         /*
         driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
@@ -212,15 +215,14 @@ public class Teleop extends CommandOpMode {
 
             boolean isBlue = Objects.equals(options[selectedOption], "Blue");
             if (isBlue) {
-                goalPose       = GOAL_POSE_BLUE;
-                invert         = -1;
+                goalPose = GOAL_POSE_BLUE;
+                invert = -1;
                 ALLIANCE_COLOR = AllianceColor.BLUE;
+                RESET_RED = new double[]{135, 8, 90};
             } else {
-                goalPose       = GOAL_POSE_RED;
-                invert         = 1;
+                goalPose = GOAL_POSE_RED;
+                invert = 1;
                 ALLIANCE_COLOR = AllianceColor.RED;
-                RESET_BLUE     = mirrorArray(RESET_BLUE);
-                RESET_RED      = new double[]{132, 8, 90};
             }
 
             follower = createFollower(hardwareMap);

@@ -21,11 +21,11 @@ public class Poses {
     // ─── Start poses ───────────────────────────────────────────────────────
 
     public static final Pose START_CLOSE = new Pose(17.6, 120.688, rad(315));
-    public static final Pose START_FAR   = new Pose(50.5,   8,  rad(270));
+    public static final Pose START_FAR   = new Pose(48.5,   9.3,  rad(270));
 
     // ─── Close-side sequences ─────────────────────────────────────────────────
 
-    public static final Pose CLOSE_SCORE = new Pose(53.5, 77, rad(308));
+    public static final Pose CLOSE_SCORE = new Pose(56.5, 77, rad(308));
     public static final Pose CLOSE_END   = new Pose(54.853,   102.53, rad(320));
     public static final Pose CLOSE_PGP   = new Pose(13,   63);
     public static final Pose CLOSE_PGP_1 = new Pose(35.292, 55.076);
@@ -37,14 +37,17 @@ public class Poses {
     public static final Pose CLOSE_GPP_1 = new Pose(56.381, 31.462);
 
     // ─── Far-side sequences ───────────────────────────────────────────────────
-    public static final Pose FAR_SCORE  = new Pose(57.5,   15,    rad(290));
-    public static final Pose FAR_END    = new Pose(40.5,    8,    rad(270));
-    public static final Pose FAR_VISION = new Pose(45,     15,    rad(180));
-    public static final Pose FAR_HP = new Pose(12,      9,    rad(180));
+    public static final Pose FAR_SCORE  = new Pose(55.72,   14,    rad(-63));
+
+    public static final Pose FAR_SPIKE_1 = new Pose(17.69, 16.49, rad(-147));
+    public static final Pose FAR_SPIKE_2 = new Pose(8, 9.3, rad(180));
+
+    public static final Pose FAR_GATE = new Pose(8, 30.72);
+    public static final Pose FAR_GATE_1 = new Pose(0, 0);
 
     /** Far-side GPP intake variation */
-    public static final Pose FAR_GPP_MID     = new Pose(46.802, 32.6, rad(180));
-    public static final Pose FAR_GPP_COLLECT = new Pose(23.573, 32.6, rad(180));
+    public static final Pose FAR_GPP_MID     = new Pose(44.419, 41.3, rad(180));
+    public static final Pose FAR_GPP_COLLECT = new Pose(14.93, 36.65, rad(180));
 
 
     // ─── Alliance mirroring ───────────────────────────────────────────────────

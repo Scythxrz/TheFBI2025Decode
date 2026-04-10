@@ -175,6 +175,8 @@ public class Auton extends CommandOpMode {
         switch (selectedSequence) {
             case ALLIANCE:        return buildAlliance();
             case NO_ALLIANCE:     return buildNoAlliance();
+            case FAR:             return buildFar();
+            case FAR_GPP:         return buildFarGPP();
             default:              return null;
         }
     }
@@ -247,24 +249,23 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
-                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, PACED, LINEAR),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
                 // Pick up GPP Spike Mark
-                intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
+                intake(new Pose[]{FAR_GPP_COLLECT, FAR_GPP_MID}),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP Spike Mark
+                intakeHP(),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP area
+                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
-                // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore)
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP area
+                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2})
         );
+
     }
 
     private SequentialCommandGroup buildFar() {
@@ -272,24 +273,22 @@ public class Auton extends CommandOpMode {
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
-                // Shoot preloads
-                new MoveAndShoot(follower, p(FAR_SCORE), 3, 2400, isBlue, RAPID, LINEAR),
-                // Blob detect
-                blob(),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP Spike Mark
+                intakeHP(),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP area
+                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP area
+                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
                 // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore),
-                // Blob detect
-                blob(),
-                // Score 3
-                shoot(CLOSE_END, 3, 2400, piecewiseScore)
+                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                // Pick up HP area
+                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2})
+
         );
     }
 
@@ -306,6 +305,9 @@ public class Auton extends CommandOpMode {
     private MoveAndShoot shoot(Pose to, int balls, double vel, DriveToPose.HeadingMode hm) {
         return new MoveAndShoot(follower, p(to), balls, vel, isBlue, RAPID, hm);
     }
+    private MoveAndShoot shootF(Pose to, int balls, double vel, PiecewiseHeading hm) {
+        return new MoveAndShoot(follower, p(to), balls, vel, isBlue, PACED, hm);
+    }
     private WaitCommand wait(double s) {
         return new WaitCommand((long) s);
     }
@@ -320,7 +322,20 @@ public class Auton extends CommandOpMode {
                 new SetIntake(MotorState.STOP)
         );
     }
-    private SequentialCommandGroup blob() {
+    private SequentialCommandGroup intakeHP() {
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> robot.flywheel.off()),
+                new ParallelCommandGroup(
+                        new SetIntake(MotorState.FORWARD),
+                        new InstantCommand(() -> robot.conveyor.forward()),
+                        new DriveToPose(follower, p(FAR_SPIKE_1), LINEAR, 1)
+                ),
+                new DriveToPose(follower, p(FAR_SPIKE_2), LINEAR, 1),
+                new WaitCommand(200),
+                new SetIntake(MotorState.STOP)
+        );
+    }
+    /*private SequentialCommandGroup blob() {
         return new SequentialCommandGroup(
                 new DriveToPose(follower, p(FAR_VISION), LINEAR),
                 new ParallelCommandGroup(
@@ -329,7 +344,8 @@ public class Auton extends CommandOpMode {
                     new InstantCommand(() -> robot.conveyor.forward())
                 )
         );
-    }
+    }*/
+
     private SequentialCommandGroup gate() {
         PiecewiseHeading toGate = new PiecewiseHeading()
             .tangent(0.0, 0.6)
