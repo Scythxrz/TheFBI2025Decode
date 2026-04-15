@@ -15,12 +15,12 @@ import com.pedropathing.geometry.Pose;
 public class Poses {
 
     // ─── Goal poses (what the robot aims at) ─────────────────────────────────
-    public static final Pose GOAL_BLUE = new Pose(2,   142, 0);
-    public static final Pose GOAL_RED  = new Pose(142, 142, 0);
+    public static final Pose GOAL_BLUE = new Pose(15,   134.5, 0);
+    public static final Pose GOAL_RED  = new Pose(134.5, 134.5, 0);
 
     // ─── Start poses ───────────────────────────────────────────────────────
 
-    public static final Pose START_CLOSE = new Pose(17.6, 120.688, rad(315));
+    public static final Pose START_CLOSE = new Pose(17.6, 120.7, rad(315));
     public static final Pose START_FAR   = new Pose(48.5,   9.3,  rad(270));
 
     // ─── Close-side sequences ─────────────────────────────────────────────────
@@ -37,16 +37,16 @@ public class Poses {
     public static final Pose CLOSE_GPP_1 = new Pose(56.381, 31.462);
 
     // ─── Far-side sequences ───────────────────────────────────────────────────
-    public static final Pose FAR_SCORE  = new Pose(55.72,   14,    rad(-63));
+    public static final Pose FAR_SCORE  = new Pose(58.72,   14,    rad(-63));
 
-    public static final Pose FAR_SPIKE_1 = new Pose(17.69, 16.49, rad(-147));
-    public static final Pose FAR_SPIKE_2 = new Pose(8, 9.3, rad(180));
+    public static final Pose FAR_SPIKE_1 = new Pose(8, 25, rad(-90));
+    public static final Pose FAR_SPIKE_2 = new Pose(8, 9.3, rad(-90));
 
     public static final Pose FAR_GATE = new Pose(8, 30.72);
-    public static final Pose FAR_GATE_1 = new Pose(0, 0);
+    public static final Pose FAR_GATE_1 = new Pose(10, 6, 4);
 
     /** Far-side GPP intake variation */
-    public static final Pose FAR_GPP_MID     = new Pose(44.419, 41.3, rad(180));
+    public static final Pose FAR_GPP_MID     = new Pose(44.419, 37.3, rad(180));
     public static final Pose FAR_GPP_COLLECT = new Pose(14.93, 36.65, rad(180));
 
 

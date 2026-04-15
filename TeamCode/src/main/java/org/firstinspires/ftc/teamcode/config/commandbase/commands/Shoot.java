@@ -62,7 +62,7 @@ public class Shoot extends CommandBase {
     private final FiringMode firingMode;
     private final boolean    velocityFF;       // true = recessional FF for shoot-while-moving
 
-    private static final long SPIN_UP_TIMEOUT_MS   = 0;
+    private static final long SPIN_UP_TIMEOUT_MS   = 500;
     private static final long POST_SHOT_DRAIN_MS   = 150;
     private static final long NO_BALL_TIMEOUT_MS   = 800;
     private static final long HEADING_SETTLE_MS    = 350;  // how long heading must be stable before firing

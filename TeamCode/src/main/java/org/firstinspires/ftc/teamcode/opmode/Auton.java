@@ -249,21 +249,23 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{FAR_GPP_COLLECT, FAR_GPP_MID}),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP Spike Mark
                 intakeHP(),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP area
-                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
+                intake(new Pose[]{FAR_GATE, FAR_GATE_1}),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP area
-                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2})
+                intake(new Pose[]{FAR_GATE, FAR_GATE_1}),
+                // Score 3
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore)
         );
 
     }
@@ -273,21 +275,21 @@ public class Auton extends CommandOpMode {
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP Spike Mark
                 intakeHP(),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP area
-                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
+                intake(new Pose[]{FAR_GATE, FAR_GATE_1}),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP area
-                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2}),
+                intake(new Pose[]{FAR_GATE, FAR_GATE_1}),
                 // Score 3
-                shootF(FAR_SCORE, 3, 2400, piecewiseScore),
+                shootF(FAR_SCORE, 3, 2500, piecewiseScore),
                 // Pick up HP area
-                intake(new Pose[]{FAR_SPIKE_1, FAR_SPIKE_2})
+                intake(new Pose[]{FAR_GATE, FAR_GATE_1})
 
         );
     }

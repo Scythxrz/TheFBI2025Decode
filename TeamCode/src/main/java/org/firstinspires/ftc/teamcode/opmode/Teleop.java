@@ -165,26 +165,39 @@ public class Teleop extends CommandOpMode {
         );
 
         // B — reverse intake
-        operator.getGamepadButton(GamepadKeys.Button.B).whileActiveContinuous(
-                new InstantCommand(() -> robot.intake.reverse())
+        driver.getGamepadButton(GamepadKeys.Button.B).whileActiveContinuous(
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> robot.intake.reverse()),
+                    new InstantCommand(() -> robot.conveyor.reverse())
+                )
         );
-        operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
-                new SetIntake(Intake.MotorState.STOP)
+        driver.getGamepadButton(GamepadKeys.Button.B).whenReleased(
+                new ParallelCommandGroup(
+                    new SetIntake(Intake.MotorState.STOP),
+                    new InstantCommand(() -> robot.conveyor.stop())
+                )
         );
         operator.getGamepadButton(GamepadKeys.Button.A).whenReleased(
                 new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
         );
 
         // Y - unjam intake
-        /*
-        driver.getGamepadButton(GamepadKeys.Button.Y).whenPressed(
+
+        driver.getGamepadButton(GamepadKeys.Button.X).whileActiveContinuous(
                 new SequentialCommandGroup(
+                        new InstantCommand(() -> robot.conveyor.forward()),
                         new SetIntake(Intake.MotorState.REVERSE),
-                        new WaitCommand(50),
+                        new WaitCommand(35),
                         new SetIntake(Intake.MotorState.FORWARD),
-                        new WaitCommand(50)
+                        new WaitCommand(35)
                 )
-        );*/
+        );
+        driver.getGamepadButton(GamepadKeys.Button.X).whenReleased(
+                new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.conveyor.stop()),
+                        new SetIntake(Intake.MotorState.STOP)
+                )
+        );
     }
 
     // ─── initialize_loop() ────────────────────────────────────────────────────

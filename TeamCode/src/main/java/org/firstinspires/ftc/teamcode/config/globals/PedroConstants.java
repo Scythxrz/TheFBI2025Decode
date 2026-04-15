@@ -32,14 +32,13 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
  */
 public class PedroConstants {
     public static FollowerConstants followerConstants = new FollowerConstants()
-            .mass(13.75)
+            .mass(12.3)
             .forwardZeroPowerAcceleration(-29.450011125114425)
             .lateralZeroPowerAcceleration(-66.46948014751574)
-            .translationalPIDFCoefficients(new PIDFCoefficients(0.13, 0, 0.0, 0.025))
-            .headingPIDFCoefficients(new PIDFCoefficients(0.9, 0, 0.001, 0.025))
-            .drivePIDFCoefficients(new FilteredPIDFCoefficients(0.019, 0, 0.004, 0.6, 0.025))
-            //.predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.1, 0.1287964666898591, 0.001853320121713957)) // (kP, kLinear, kQuadratic)
-
+            //.translationalPIDFCoefficients(new PIDFCoefficients(0.13, 0, 0.0, 0.025))
+            .headingPIDFCoefficients(new PIDFCoefficients(0.9, 0, 0, 0.025))
+            //.drivePIDFCoefficients(new FilteredPIDFCoefficients(0.019, 0, 0.004, 0.6, 0.025))
+            .predictiveBrakingCoefficients(new PredictiveBrakingCoefficients(0.1, 0.1287964666898591, 0.001853320121713957)) // (kP, kLinear, kQuadratic)
             ;
 
     public static PathConstraints pathConstraints = new PathConstraints(0.95, 100, 1, 1);
@@ -58,8 +57,10 @@ public class PedroConstants {
             .yVelocity(61.40360365922963)
             ;
     public static PinpointConstants localizerConstants = new PinpointConstants()
-            .forwardPodY(-3.125)
-            .strafePodX(-2.375)
+            //.forwardPodY(-3.125)
+            //.strafePodX(-2.375)
+            .forwardPodY(0)
+            .strafePodX(0)
             .distanceUnit(DistanceUnit.INCH)
             .hardwareMapName("pinpoint")
             .encoderResolution(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD)
