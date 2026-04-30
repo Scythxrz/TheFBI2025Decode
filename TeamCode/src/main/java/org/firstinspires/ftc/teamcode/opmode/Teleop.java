@@ -77,13 +77,15 @@ public class Teleop extends CommandOpMode {
     // ─── Aim / heading state ──────────────────────────────────────────────────
     private int      invert         = -1; // -1 = Blue, 1 = Red
     private double   headingError   = 0;
+    private double   gateError      = 0;
     private double   distanceToGoal = 0;
     private boolean  headingLock    = false;
+    private boolean  gateLock       = false;
     private double[] goalPose       = GOAL_POSE_BLUE;
 
     // Heading PIDF controller for aimbot — tune kP in Constants if tracking feels sluggish or oscillates
     private final PIDFController headingController =
-            new PIDFController(new com.pedropathing.control.PIDFCoefficients(1, 0, 0, 0.025));
+            new PIDFController(new com.pedropathing.control.PIDFCoefficients(0.7, 0, 0.045, 0.025));
 
     // Reset poses (field coordinates, Pedro system)
     public static double[] RESET_RED  = {9,   8,  90};
@@ -114,7 +116,17 @@ public class Teleop extends CommandOpMode {
 
         // Toggle heading lock (aim toward goal)
         driver.getGamepadButton(GamepadKeys.Button.LEFT_BUMPER).whenPressed(
-                new InstantCommand(() -> headingLock = !headingLock)
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> headingLock = !headingLock),
+                    new InstantCommand(() -> gateLock = false)
+                )
+        );
+
+        driver.getGamepadButton(GamepadKeys.Button.X).whenPressed(
+                new ParallelCommandGroup(
+                        new InstantCommand(() -> gateLock = !gateLock),
+                        new InstantCommand(() -> headingLock = false)
+                )
         );
         /*
         // Auto-park
@@ -182,7 +194,7 @@ public class Teleop extends CommandOpMode {
         );
 
         // Y - unjam intake
-
+        /*
         driver.getGamepadButton(GamepadKeys.Button.X).whileActiveContinuous(
                 new SequentialCommandGroup(
                         new InstantCommand(() -> robot.conveyor.forward()),
@@ -197,7 +209,7 @@ public class Teleop extends CommandOpMode {
                         new InstantCommand(() -> robot.conveyor.stop()),
                         new SetIntake(Intake.MotorState.STOP)
                 )
-        );
+        );*/
     }
 
     // ─── initialize_loop() ────────────────────────────────────────────────────
@@ -263,11 +275,16 @@ public class Teleop extends CommandOpMode {
         double dy = goalPose[1] - follower.getPose().getY();
         distanceToGoal = Math.hypot(dx, dy);
         headingError   = normalizeAngle(Math.atan2(dy, dx) + Math.PI - follower.getPose().getHeading());
+        gateError = normalizeAngle(135 - follower.getPose().getHeading());
 
         // ── Drive ─────────────────────────────────────────────────────────────
         double turnPower;
-        if (headingLock) {
-            headingController.updateError(headingError);
+        if (headingLock || gateLock) {
+            if (headingLock) {
+                headingController.updateError(headingError);
+            } else {
+                headingController.updateError(gateError);
+            }
             double kV    = -0.5;
             double denom = dx * dx + dy * dy;
             double headingVelFF = denom > 1e-6
@@ -284,7 +301,7 @@ public class Teleop extends CommandOpMode {
                 turnPower,
                 false
         );
-
+        robot.flywheel.setVelocityForDistance(distanceToGoal);
         // ── Telemetry ─────────────────────────────────────────────────────────
         telemetryM.addData("X",               follower.getPose().getX());
         telemetryM.addData("Y",               follower.getPose().getY());

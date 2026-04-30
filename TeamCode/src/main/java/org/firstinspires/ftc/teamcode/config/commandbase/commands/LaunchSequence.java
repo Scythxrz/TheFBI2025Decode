@@ -103,7 +103,7 @@ public class LaunchSequence extends CommandBase {
         boolean flywheelReady  = flywheel.atTarget();
         boolean headingSettled = Math.abs(headingErrorSupplier.get()) < Constants.AIM_ANGLE_TOLERANCE;
         boolean spinTimedOut   = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
-        boolean readyToFire    = (flywheelReady && headingSettled) || spinTimedOut;
+        boolean readyToFire    = (flywheelReady && headingSettled); //|| spinTimedOut;
 
         switch (state) {
 
@@ -118,7 +118,7 @@ public class LaunchSequence extends CommandBase {
             case FEEDING:
                 if (firingMode == FiringMode.PACED) {
                     // PACED: close gate if heading/flywheel lost mid-shot
-                    if (!readyToFire && !spinTimedOut) {
+                    if (!readyToFire) { //&& !spinTimedOut) {
                         conveyor.stop();
                         spinUpStart = System.currentTimeMillis();
                         state = State.WAITING;
