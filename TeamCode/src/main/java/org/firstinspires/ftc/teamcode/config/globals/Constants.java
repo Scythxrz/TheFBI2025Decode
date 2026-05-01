@@ -1,7 +1,6 @@
 package org.firstinspires.ftc.teamcode.config.globals;
 
 import com.bylazar.configurables.annotations.Configurable;
-import com.qualcomm.robotcore.hardware.PIDFCoefficients;
 
 /**
  * Central constants file — all tunable values live here.
@@ -28,14 +27,27 @@ public class Constants {
 
     // ─── Shooter / Flywheel ───────────────────────────────────────────────────
     /**
-     * PIDF for the shooter motor running in RUN_USING_ENCODER mode.
-     * Start with these values and tune kP / kF on FTC Dashboard.
-     *   kP  — corrects steady-state error
-     *   kI  — usually left at 0 for flywheels
-     *   kD  — usually left at 0 for flywheels
-     *   kF  — feedforward (~11 is a common starting point for NeveRest / GoBILDA)
+     * PIDF gains for the software flywheel velocity controller (SolversLib PIDFController).
+     * All four values are live-tunable on FTC Dashboard via @Configurable.
+     *
+     * Tuning order:
+     *   1. Set kP/kI/kD = 0. Raise kF until the flywheel gets close to target
+     *      velocity on its own (~1/MAX_SHOOTER_VELOCITY is a starting point).
+     *   2. Raise kP until steady-state error disappears without oscillation.
+     *   3. Add a small kD only if the flywheel overshoots noticeably on spin-up.
+     *   4. kI is rarely needed for flywheels — leave at 0 unless there is
+     *      persistent steady-state error that kP alone cannot correct.
+     *
+     *   kF  — feedforward: scales target velocity directly into motor power.
+     *          Start near 1.0 / MAX_SHOOTER_VELOCITY ≈ 0.000417.
+     *   kP  — proportional: corrects remaining error after kF.
+     *   kI  — integral: eliminates small persistent offset (use sparingly).
+     *   kD  — derivative: dampens overshoot on spin-up.
      */
-    public static PIDFCoefficients SHOOTER_PIDF = new PIDFCoefficients(40, 0, 0, 9.5);
+    public static double SHOOTER_KF = 0.00042;  // ≈ 1 / 2400
+    public static double SHOOTER_KP = 0.0005;
+    public static double SHOOTER_KI = 0.0;
+    public static double SHOOTER_KD = 0.0;
 
     // How close the flywheel needs to be to targetVelocity before feeding starts.
     // Wider = shoots sooner at the cost of slightly reduced accuracy.

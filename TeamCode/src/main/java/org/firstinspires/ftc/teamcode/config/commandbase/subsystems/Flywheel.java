@@ -4,6 +4,7 @@ import static org.firstinspires.ftc.teamcode.config.globals.Constants.*;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.seattlesolvers.solverslib.command.SubsystemBase;
+import com.seattlesolvers.solverslib.controller.PIDFController;
 
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
@@ -23,23 +24,26 @@ public class Flywheel extends SubsystemBase {
     private double prevVelocity      = -1.0; // sentinel for ball detection
     private long   lastDetectionTime = 0;    // ms — cooldown after each ball count
 
+    // Software PIDF controller — runs in periodic() every CommandScheduler tick.
+    // Gains are read from Constants each tick so FTC Dashboard changes take effect live.
+    private final PIDFController controller = new PIDFController(
+            SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_KF
+    );
+
     // ─── Constructor ──────────────────────────────────────────────────────────
 
     public Flywheel() {
-        // Apply PIDF coefficients to the motor's RUN_USING_ENCODER mode
-        robot.shooterMotor.setPIDFCoefficients(
-                DcMotor.RunMode.RUN_USING_ENCODER,
-                SHOOTER_PIDF
-        );
-        robot.shooterMotor.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        // RUN_WITHOUT_ENCODER lets us call setPower() directly.
+        // The encoder is still attached and getVelocity() still works — we just
+        // run the PIDF loop ourselves in periodic() instead of delegating to hardware.
+        robot.shooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     // ─── Public API ───────────────────────────────────────────────────────────
 
-    /** Spin up to an exact velocity in ticks/second (no voltage compensation). */
+    /** Spin up to a target velocity in ticks/second. The PIDF loop in periodic() applies power. */
     public void setVelocity(double ticksPerSecond) {
         targetVelocity = ticksPerSecond;
-        robot.shooterMotor.setVelocity(ticksPerSecond);
     }
 
     public void setPower(double power) {
@@ -97,10 +101,10 @@ public class Flywheel extends SubsystemBase {
         setVelocity(compensated + velocityFF);
     }
 
-    /** Stop the flywheel. */
+    /** Stop the flywheel and reset the PIDF controller state. */
     public void off() {
         targetVelocity = 0;
-        robot.shooterMotor.setVelocity(0);
+        controller.reset();
         robot.shooterMotor.setPower(0);
     }
 
@@ -152,10 +156,33 @@ public class Flywheel extends SubsystemBase {
     }
 
     // ─── Periodic ─────────────────────────────────────────────────────────────
-    // No continuous update needed here; velocity is set imperatively.
-    // If you add a software PIDF loop (like Decode 2026's Launcher), put it here.
+
+    /**
+     * Called every CommandScheduler tick.
+     *
+     * Runs the software PIDF loop:
+     *   1. Pulls the latest gain values from Constants so FTC Dashboard edits
+     *      apply immediately without restarting the OpMode.
+     *   2. When targetVelocity == 0 the motor is cut to 0 and the controller
+     *      is reset — avoids the integrator winding up while the flywheel coasts.
+     *   3. Otherwise, calculate(currentVelocity, targetVelocity) returns a
+     *      [-1, 1] power value which is sent straight to setPower().
+     */
     @Override
-    public void periodic() { }
+    public void periodic() {
+        // Pick up any live Dashboard changes to the gain constants
+        controller.setPIDF(SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_KF);
+
+        if (targetVelocity <= 0) {
+            controller.reset();
+            robot.shooterMotor.setPower(0);
+            return;
+        }
+
+        double output = controller.calculate(getVelocity(), targetVelocity);
+        // Clamp to [0, 1] — the flywheel only spins in one direction
+        robot.shooterMotor.setPower(Math.max(0, Math.min(1, output)));
+    }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
 
