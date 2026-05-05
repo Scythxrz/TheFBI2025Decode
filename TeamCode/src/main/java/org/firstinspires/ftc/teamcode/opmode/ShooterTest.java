@@ -88,6 +88,7 @@ public class ShooterTest extends CommandOpMode {
     public static double[] RESET_BLUE = {32, 135, 270};
     public static double[] RESET_RED  = {12,   8,  90};
 
+    public double power = 1850;
     // Park pose
     public static double[] PARK_POSE = {41.678, 29.632, 270};
 
@@ -113,12 +114,18 @@ public class ShooterTest extends CommandOpMode {
 
         // Y — RAPID fire (gate stays open between balls — close range)
         driver.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
-                new InstantCommand(() -> robot.flywheel.setPower(1))
+                new ParallelCommandGroup(
+                        //new InstantCommand(() -> ),
+                        new InstantCommand(() -> robot.gate.open()),
+                        new InstantCommand(()-> robot.conveyor.forward()),
+                        new InstantCommand(() -> robot.intake.forward())
+                )
         );
         driver.getGamepadButton(GamepadKeys.Button.Y).whenReleased(
                 new ParallelCommandGroup(
-                    new InstantCommand(() -> robot.flywheel.off()),
-                    new SetIntake(Intake.MotorState.STOP)
+                        new InstantCommand(() -> robot.gate.close()),
+                        new InstantCommand(()-> robot.conveyor.stop()),
+                        new InstantCommand(() -> robot.intake.stop())
                 )
         );
 
@@ -136,6 +143,14 @@ public class ShooterTest extends CommandOpMode {
                     new InstantCommand(()-> robot.conveyor.stop()),
                     new InstantCommand(() -> robot.intake.stop())
                 )
+        );
+
+        driver.getGamepadButton(GamepadKeys.Button.DPAD_UP).whenPressed(
+                new InstantCommand(() -> power += 50)
+        );
+
+        driver.getGamepadButton(GamepadKeys.Button.DPAD_DOWN).whenPressed(
+                new InstantCommand(() -> power -= 50)
         );
 
         /*// A — PACED fire (gate closes between balls for flywheel recovery — far range)
@@ -165,6 +180,10 @@ public class ShooterTest extends CommandOpMode {
         );
         operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
                 new SetIntake(Intake.MotorState.STOP)
+        );
+
+        operator.getGamepadButton(GamepadKeys.Button.A).whenPressed(
+                new InstantCommand(() -> follower.setPose(toPose(new double[]{135,8,90})))
         );
 
         // Y - unjam intake
@@ -256,7 +275,7 @@ public class ShooterTest extends CommandOpMode {
         } else {
             turnPower = -gamepad1.right_stick_x * 0.75;
         }
-
+        robot.flywheel.setVelocity(power);
         follower.setTeleOpDrive(
                 gamepad1.left_stick_y * invert,
                 gamepad1.left_stick_x * invert,

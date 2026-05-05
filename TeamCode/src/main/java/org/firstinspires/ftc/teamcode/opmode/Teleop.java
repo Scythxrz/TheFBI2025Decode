@@ -301,7 +301,11 @@ public class Teleop extends CommandOpMode {
                 turnPower,
                 false
         );
-        robot.flywheel.setVelocityForDistance(distanceToGoal);
+        if (headingLock) {
+            robot.flywheel.setVelocityForDistance(distanceToGoal);
+        } else {
+            robot.flywheel.setVelocity(1675);
+        }
         // ── Telemetry ─────────────────────────────────────────────────────────
         telemetryM.addData("X",               follower.getPose().getX());
         telemetryM.addData("Y",               follower.getPose().getY());

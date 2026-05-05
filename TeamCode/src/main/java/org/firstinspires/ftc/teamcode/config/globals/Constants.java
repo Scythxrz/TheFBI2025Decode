@@ -76,7 +76,10 @@ public class Constants {
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
     // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
     public static final double[][] SHOOTER_LUT = {
-            {50.45,   1650},
+            {82, 1700},
+            {82, 1750},
+            {92, 1850},
+            /*{50.45,   1650},
             {60.2258, 1700},
             {65.14,   1725},
             {70.04,   1750},
@@ -93,7 +96,7 @@ public class Constants {
             {124.8829,2275},
             {130.4457,2350},
             {134.4726,2375},
-            {141.0453,2475}
+            {141.0453,2475}*/
     };
 
     // ─── Intake ───────────────────────────────────────────────────────────────
