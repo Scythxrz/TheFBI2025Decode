@@ -60,8 +60,8 @@ public class Flywheel extends SubsystemBase {
         double vel = velocityFromLUT(distanceInches);
         double voltage = robot.getVoltage();
         // Partial voltage compensation (matches FBI2025 formula)
-        double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
-        setVelocity(compensated);
+        //double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+        setVelocity(vel);
     }
 
     /**

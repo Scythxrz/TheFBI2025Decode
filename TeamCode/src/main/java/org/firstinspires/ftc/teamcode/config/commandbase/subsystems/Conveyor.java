@@ -29,6 +29,7 @@ public class Conveyor extends SubsystemBase {
     private final Timer   feedTimer     = new Timer();
     private boolean       feedTimerStarted = false;
     private long feedStartTime = System.currentTimeMillis();;
+    private double conveyorSpeed = CONVEYOR_CLOSE_SPEED;
 
     // ─── Public API ───────────────────────────────────────────────────────────
 
@@ -36,8 +37,10 @@ public class Conveyor extends SubsystemBase {
      * Open the gate and start feeding balls into the flywheel.
      * Call once to begin — periodic() handles the belt delay internally.
      */
-    public void feed() {
+    public void feed(boolean close) {
         if (state != ConveyorState.FEEDING) {
+            if (!close) { conveyorSpeed = CONVEYOR_FAR_SPEED; }
+            else { conveyorSpeed = CONVEYOR_CLOSE_SPEED; }
             state            = ConveyorState.FEEDING;
             feedStartTime = System.currentTimeMillis(); // ← reliable ms
             robot.stopperServo.setPosition(STOPPER_OPEN);
@@ -49,7 +52,7 @@ public class Conveyor extends SubsystemBase {
             state = ConveyorState.FORWARD;
             feedTimerStarted = false;
             robot.stopperServo.setPosition(STOPPER_CLOSED);
-            robot.conveyorMotor.set(CONVEYOR_FORWARD_SPEED);
+            robot.conveyorMotor.set(CONVEYOR_CLOSE_SPEED);
         }
     }
     /** Reverse the belt to clear jams. Gate stays closed. */
@@ -76,7 +79,7 @@ public class Conveyor extends SubsystemBase {
     public void periodic() {
         if (state == ConveyorState.FEEDING) {
             if (System.currentTimeMillis() - feedStartTime > CONVEYOR_FEED_DELAY_MS) {
-                robot.conveyorMotor.set(CONVEYOR_FORWARD_SPEED);
+                robot.conveyorMotor.set(CONVEYOR_CLOSE_SPEED);
             }
         }
     }

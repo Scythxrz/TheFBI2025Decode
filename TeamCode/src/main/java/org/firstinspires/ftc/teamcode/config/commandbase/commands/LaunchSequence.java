@@ -110,13 +110,15 @@ public class LaunchSequence extends CommandBase {
             case WAITING:
                 if (readyToFire) {
                     detector = new BallDetector(); // fresh baseline each time gate opens
-                    conveyor.feed();
+                    if (firingMode == FiringMode.PACED) {
+                        conveyor.feed(false);
+                    } else { conveyor.feed(true); }
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                if (firingMode == FiringMode.PACED) {
+                /*if (firingMode == FiringMode.PACED) {
                     // PACED: close gate if heading/flywheel lost mid-shot
                     if (!readyToFire) { //&& !spinTimedOut) {
                         conveyor.stop();
@@ -129,7 +131,7 @@ public class LaunchSequence extends CommandBase {
                         spinUpStart = System.currentTimeMillis();
                         state = State.RECOVERING;
                     }
-                }
+                }*/
                 // RAPID: gate stays open unconditionally — operator controls duration
                 break;
 
@@ -138,7 +140,7 @@ public class LaunchSequence extends CommandBase {
                     // Flywheel recovered — reopen for next ball
                     if (readyToFire) {
                         detector = new BallDetector(); // fresh baseline after recovery
-                        conveyor.feed();
+                        conveyor.feed(true);
                         state = State.FEEDING;
                     } else {
                         state = State.WAITING;

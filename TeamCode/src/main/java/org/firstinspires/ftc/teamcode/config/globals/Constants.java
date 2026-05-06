@@ -44,8 +44,8 @@ public class Constants {
      *   kI  — integral: eliminates small persistent offset (use sparingly).
      *   kD  — derivative: dampens overshoot on spin-up.
      */
-    public static double SHOOTER_KF = 0.00042;  // ≈ 1 / 2400
-    public static double SHOOTER_KP = 0.0005;
+    public static double SHOOTER_KF = 0.00038;  // ≈ 1 / 2400
+    public static double SHOOTER_KP = 0.00075;
     public static double SHOOTER_KI = 0.0;
     public static double SHOOTER_KD = 0.0;
 
@@ -108,7 +108,8 @@ public class Constants {
     public static double BALL_DETECTION_THRESHOLD = 600; // ticks/s
 
     // ─── Conveyor ─────────────────────────────────────────────────────────────
-    public static double CONVEYOR_FORWARD_SPEED = 1.0;
+    public static double CONVEYOR_CLOSE_SPEED = 1.0;
+    public static double CONVEYOR_FAR_SPEED = 0.4;
     public static double CONVEYOR_REVERSE_SPEED = -1.0;
 
     // Delay after stopper opens before conveyor starts feeding (ms)

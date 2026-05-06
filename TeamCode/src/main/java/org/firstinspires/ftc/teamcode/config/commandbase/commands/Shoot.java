@@ -148,13 +148,13 @@ public class Shoot extends CommandBase {
                 boolean ready    = robot.flywheel.atTarget();
                 boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
                 if (ready || timedOut) {
-                    robot.conveyor.feed();
+                    robot.conveyor.feed(true);
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                robot.conveyor.feed();
+                robot.conveyor.feed(true);
                 if (lastBallTime == 0) lastBallTime = System.currentTimeMillis();
 
                 if (System.currentTimeMillis() - lastBallTime > NO_BALL_TIMEOUT_MS) {
@@ -183,7 +183,7 @@ public class Shoot extends CommandBase {
                 boolean recTimedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
                 if (recovered || recTimedOut) {
                     lastBallTime = System.currentTimeMillis();
-                    robot.conveyor.feed();
+                    robot.conveyor.feed(true);
                     state = State.FEEDING;
                 }
                 break;
