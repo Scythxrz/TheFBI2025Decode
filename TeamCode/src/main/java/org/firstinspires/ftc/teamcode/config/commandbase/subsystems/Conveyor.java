@@ -79,7 +79,7 @@ public class Conveyor extends SubsystemBase {
     public void periodic() {
         if (state == ConveyorState.FEEDING) {
             if (System.currentTimeMillis() - feedStartTime > CONVEYOR_FEED_DELAY_MS) {
-                robot.conveyorMotor.set(CONVEYOR_CLOSE_SPEED);
+                robot.conveyorMotor.set(conveyorSpeed);
             }
         }
     }
