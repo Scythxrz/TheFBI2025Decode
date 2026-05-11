@@ -52,7 +52,7 @@ public class Conveyor extends SubsystemBase {
             state = ConveyorState.FORWARD;
             feedTimerStarted = false;
             robot.stopperServo.setPosition(STOPPER_CLOSED);
-            robot.conveyorMotor.set(CONVEYOR_CLOSE_SPEED);
+            robot.conveyorMotor.set(CONVEYOR_INTAKE_SPEED);
         }
     }
     /** Reverse the belt to clear jams. Gate stays closed. */

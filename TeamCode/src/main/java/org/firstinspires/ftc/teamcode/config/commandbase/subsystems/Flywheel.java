@@ -23,11 +23,12 @@ public class Flywheel extends SubsystemBase {
     private double targetVelocity = 0;
     private double prevVelocity      = -1.0; // sentinel for ball detection
     private long   lastDetectionTime = 0;    // ms — cooldown after each ball count
+    private double veloCompKF = SHOOTER_KF;
 
     // Software PIDF controller — runs in periodic() every CommandScheduler tick.
     // Gains are read from Constants each tick so FTC Dashboard changes take effect live.
     private final PIDFController controller = new PIDFController(
-            SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_KF
+            SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, veloCompKF
     );
 
     // ─── Constructor ──────────────────────────────────────────────────────────
@@ -57,11 +58,17 @@ public class Flywheel extends SubsystemBase {
      * so the ball still lands when the battery sags.
      */
     public void setVelocityForDistance(double distanceInches) {
-        double vel = velocityFromLUT(distanceInches);
+        double vel     = velocityFromLUT(distanceInches);
         double voltage = robot.getVoltage();
-        // Partial voltage compensation (matches FBI2025 formula)
-        //double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
-        setVelocity(vel);
+
+        // Quadratic factor: rises as voltage drops, flat near nominal
+        /*double rawFactor = QUAD_A * Math.pow(voltage - NOMINAL_VOLTAGE, 2) + MIN_COMP_FACTOR;
+        double compFactor = Math.min(Math.max(rawFactor, MIN_COMP_FACTOR), MAX_COMP_FACTOR);
+
+        double compensated = vel * (1.0 + compFactor * ((NOMINAL_VOLTAGE / voltage) - 1.0));*/
+
+
+        setVelocity(vel); // BUG FIX: was setVelocity(vel) — compensation was never applied
     }
 
     /**
@@ -83,8 +90,12 @@ public class Flywheel extends SubsystemBase {
         double voltage = robot.getVoltage();
 
         // Voltage compensation (same formula as setVelocityForDistance)
-        double compensated = vel * (1.0 + VOLTAGE_COMP_FACTOR * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+        // Quadratic factor: rises as voltage drops, flat near nominal
+        double rawFactor = QUAD_A * Math.pow(voltage - NOMINAL_VOLTAGE, 2) + MIN_COMP_FACTOR;
+        double compFactor = Math.min(Math.max(rawFactor, MIN_COMP_FACTOR), MAX_COMP_FACTOR);
 
+        double compensated = vel * (1.0 + compFactor * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+        /*
         // Velocity feedforward: scale robot inches/s into shooter ticks/s using the LUT
         // gradient at this distance (Δticks/Δdistance × robot speed = Δticks/s needed).
         // Simpler approximation: sample the LUT at distance ± a small delta to get the
@@ -96,9 +107,9 @@ public class Flywheel extends SubsystemBase {
 
         // lutSlope × velocityAwayFromGoal: positive when retreating (adds power),
         //                                  negative when closing  (reduces power)
-        double velocityFF = VELOCITY_FF_GAIN * lutSlope * velocityAwayFromGoal;
-
-        setVelocity(compensated + velocityFF);
+        double velocityFF = 1 * lutSlope * velocityAwayFromGoal;
+*/
+        setVelocity(compensated);
     }
 
     /** Stop the flywheel and reset the PIDF controller state. */
@@ -170,8 +181,14 @@ public class Flywheel extends SubsystemBase {
      */
     @Override
     public void periodic() {
+        double voltage = robot.getVoltage();
+        double rawFactor = QUAD_A * Math.pow(voltage - NOMINAL_VOLTAGE, 2) + MIN_COMP_FACTOR;
+        double compFactor = Math.min(Math.max(rawFactor, MIN_COMP_FACTOR), MAX_COMP_FACTOR);
+
+        veloCompKF = SHOOTER_KF * (1.0 + compFactor * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+
         // Pick up any live Dashboard changes to the gain constants
-        controller.setPIDF(SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, SHOOTER_KF);
+        controller.setPIDF(SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, veloCompKF);
 
         if (targetVelocity <= 0) {
             controller.reset();

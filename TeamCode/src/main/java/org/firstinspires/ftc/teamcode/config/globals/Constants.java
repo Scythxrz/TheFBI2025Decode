@@ -45,7 +45,7 @@ public class Constants {
      *   kD  — derivative: dampens overshoot on spin-up.
      */
     public static double SHOOTER_KF = 0.00038;  // ≈ 1 / 2400
-    public static double SHOOTER_KP = 0.00075;
+    public static double SHOOTER_KP = 0.0045;
     public static double SHOOTER_KI = 0.0;
     public static double SHOOTER_KD = 0.0;
 
@@ -65,20 +65,16 @@ public class Constants {
     // Too short → double-counts one ball. Too long → misses rapid consecutive balls.
     public static long   BALL_DETECTION_COOLDOWN_MS  = 150;  // ms
     public static double MAX_SHOOTER_VELOCITY        = 2400; // ticks/s
-
-    // Velocity compensation multiplier (scales for voltage sag)
-    // Formula used: velocity * (NOMINAL_VOLTAGE / measuredVoltage) * VOLTAGE_COMP_FACTOR
-    public static double VOLTAGE_COMP_FACTOR  = 0.5;
-    // Scales the LUT slope × recessional velocity into extra ticks/s.
-    // Start at 1.0 (full compensation) and reduce if it over-corrects.
-    public static double VELOCITY_FF_GAIN     = 1.5;
+    public static final double MIN_COMP_FACTOR   = 0.2;   // factor at nominal voltage
+    public static final double MAX_COMP_FACTOR   = 0.7;   // factor at low voltage
+    public static final double QUAD_A            = 0.128; // (MAX - MIN) / (NOMINAL - LOW_V)^2
 
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
     // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
     public static final double[][] SHOOTER_LUT = {
-            {82, 1700},
-            {82, 1750},
-            {92, 1850},
+            {82, 1600},
+            {92, 1650},
+            {102, 1700}
             /*{50.45,   1650},
             {60.2258, 1700},
             {65.14,   1725},
@@ -108,7 +104,8 @@ public class Constants {
     public static double BALL_DETECTION_THRESHOLD = 600; // ticks/s
 
     // ─── Conveyor ─────────────────────────────────────────────────────────────
-    public static double CONVEYOR_CLOSE_SPEED = 1.0;
+    public static double CONVEYOR_CLOSE_SPEED = 0.7;
+    public static double CONVEYOR_INTAKE_SPEED = 1.0;
     public static double CONVEYOR_FAR_SPEED = 0.4;
     public static double CONVEYOR_REVERSE_SPEED = -1.0;
 
