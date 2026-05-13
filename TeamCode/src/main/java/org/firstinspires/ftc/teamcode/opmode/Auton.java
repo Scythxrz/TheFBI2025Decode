@@ -20,6 +20,7 @@ import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToBlobs;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.DriveToPose;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.MoveAndShoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
+import org.firstinspires.ftc.teamcode.config.commandbase.commands.Shoot;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.ShootWhileMoving;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.PiecewiseHeading;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
@@ -218,27 +219,27 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shoot(CLOSE_SCORE, 2000, piecewiseScore),
+                shoot(CLOSE_SCORE, 0, piecewiseScore),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 1600, piecewiseScore),
+                shoot(CLOSE_SCORE, 0, piecewiseScore),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1600, piecewiseScore),
+                shoot(CLOSE_SCORE, 0, piecewiseScore),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1600, piecewiseScore),
+                shoot(CLOSE_SCORE, 0, piecewiseScore),
                 // Pick up PPG Spike Mark
                 intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 1600, piecewiseScore),
+                shoot(CLOSE_SCORE, 0, piecewiseScore),
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
-                shoot(CLOSE_END, 1550, piecewiseScore)
+                shoot(CLOSE_END, 0, piecewiseScore)
         );
     }
 

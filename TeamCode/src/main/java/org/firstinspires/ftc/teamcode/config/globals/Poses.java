@@ -15,7 +15,7 @@ import com.pedropathing.geometry.Pose;
 public class Poses {
 
     // ─── Goal poses (what the robot aims at) ─────────────────────────────────
-    public static final Pose GOAL_BLUE = new Pose(20,   131.5, 0);
+    public static final Pose GOAL_BLUE = new Pose(10,   131.5, 0);
     public static final Pose GOAL_RED  = new Pose(134.5, 134.5, 0);
 
     // ─── Start poses ───────────────────────────────────────────────────────

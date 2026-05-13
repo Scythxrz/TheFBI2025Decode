@@ -47,6 +47,8 @@ public class DriveToPose extends CommandBase {
     private final HeadingMode      headingMode;
     private final double           maxSpeed;
     private final PiecewiseHeading piecewiseHeading; // null = use headingMode
+    private boolean hasExecutedOnce = false;
+
 
     // ─── Constructors — straight line ─────────────────────────────────────────
 
@@ -105,6 +107,7 @@ public class DriveToPose extends CommandBase {
 
     @Override
     public void initialize() {
+        hasExecutedOnce = false;
         Pose from = follower.getPose();
         Path pathObj;
 
@@ -140,6 +143,10 @@ public class DriveToPose extends CommandBase {
 
     @Override
     public boolean isFinished() {
+        if (!hasExecutedOnce) {
+            hasExecutedOnce = true;
+            return false; // never finish on the same tick we started
+        }
         return !follower.isBusy();
     }
 
