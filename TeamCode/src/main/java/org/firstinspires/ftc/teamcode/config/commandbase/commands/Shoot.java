@@ -1,104 +1,63 @@
 package org.firstinspires.ftc.teamcode.config.commandbase.commands;
 
-import static org.firstinspires.ftc.robotcore.external.BlocksOpModeCompanion.telemetry;
-
-import com.bylazar.telemetry.JoinedTelemetry;
-import com.bylazar.telemetry.PanelsTelemetry;
 import com.pedropathing.follower.Follower;
 import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.CommandBase;
 
-import org.firstinspires.ftc.robotcore.external.Telemetry;
 import org.firstinspires.ftc.teamcode.config.globals.Constants;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
- * Shoot — spins up the flywheel and fires a set number of balls.
+ * Shoot — spins up the flywheel and runs the conveyor for a fixed duration.
  *
- * This is the shared shooting core used by MoveAndShoot and ShootWhileMoving.
- * It does NOT drive anywhere — pair it with DriveToPose via a command group.
+ * State machine: SETTLING → SPINNING → FEEDING → DRAINING → DONE
  *
- * ── Firing modes ──────────────────────────────────────────────────────────────
- *   RAPID (default) — gate stays open between balls, counts detections continuously.
- *   PACED           — gate closes after each ball, waits for flywheel recovery.
+ * Tuning: set Constants.SHOOT_FEED_TIME_MS to how long the conveyor should run
+ * after the flywheel reaches speed. Tune on the field to match your magazine size.
  *
- * ── Velocity ──────────────────────────────────────────────────────────────────
- *   Pass overrideVelocity > 0 to use a fixed RPM.
- *   Pass overrideVelocity <= 0 to use the distance LUT from the current pose.
- *   Pass velocityFF = true to apply recessional velocity feed-forward (for shoot-while-moving).
- *
- * ── Timeout behaviour ─────────────────────────────────────────────────────────
- *   HEADING_SETTLE_MS  — heading must be within AIM_ANGLE_TOLERANCE for this long before firing.
- *   HEADING_TIMEOUT_MS — if heading never settles after this long, fire anyway.
- *   SPIN_UP_TIMEOUT_MS — if flywheel hasn't reached target after this long, fire anyway.
- *   NO_BALL_TIMEOUT_MS — if no ball is detected within this window after the last one
- *                        (or since feeding started), stop and move on. Handles under-loaded magazines.
- *   POST_SHOT_DRAIN_MS — after the last detected ball, keep conveyor running briefly
- *                        so the ball fully clears the shooter before stopping.
- *
- * ── Usage ─────────────────────────────────────────────────────────────────────
- *   // Fixed velocity, rapid fire:
- *   new Shoot(follower, 3, 1850, isBlue)
- *
- *   // Distance LUT, paced fire:
- *   new Shoot(follower, 3, -1, isBlue, FiringMode.PACED)
- *
- *   // With velocity feed-forward (shoot-while-moving):
- *   new Shoot(follower, 3, 1850, isBlue, FiringMode.RAPID, true)
+ * Velocity modes:
+ *   overrideVelocity > 0  — fixed ticks/s target
+ *   overrideVelocity <= 0 — distance LUT from current pose
+ *   velocityFF = true     — recessional FF for shoot-while-moving
  */
 public class Shoot extends CommandBase {
 
-    public enum FiringMode { RAPID, PACED }
-
-    public enum State { SETTLING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
+    public enum State { SETTLING, SPINNING, FEEDING, DRAINING, DONE }
     private State state;
 
-    private Telemetry telemetry;
-    private final Follower   follower;
-    private final int        ballsToFire;
-    private final double     overrideVelocity; // <= 0 means use distance LUT
-    private final boolean    isBlue;
-    private final FiringMode firingMode;
-    private final boolean    velocityFF;       // true = recessional FF for shoot-while-moving
+    private final Follower follower;
+    private final long     feedTimeMs;
+    private final double   overrideVelocity;
+    private final boolean  isBlue;
+    private final boolean  velocityFF;
 
-    private static final long SPIN_UP_TIMEOUT_MS   = 500;
-    private static final long POST_SHOT_DRAIN_MS   = 150;
-    private static final long NO_BALL_TIMEOUT_MS   = 800;
-    private static final long HEADING_SETTLE_MS    = 350;  // how long heading must be stable before firing
-    private static final long HEADING_TIMEOUT_MS   = 350;  // give up waiting for heading after this long
+    private static final long SPIN_UP_TIMEOUT_MS = 500;
+    private static final long POST_SHOT_DRAIN_MS = 150;
+    private static final long HEADING_SETTLE_MS  = 350;
+    private static final long HEADING_TIMEOUT_MS = 350;
 
     private final Robot robot = Robot.getInstance();
-    private int          shotsFired   = 0;
-    private BallDetector detector;
     private long spinUpStart        = 0;
+    private long feedStart          = 0;
     private long drainStart         = 0;
-    private long lastBallTime       = 0;
-    private long headingSettleStart = 0; // when heading first came within tolerance
-    private long headingTimerStart  = 0; // when SETTLING state began
-    private JoinedTelemetry telemetryM;
+    private long headingSettleStart = 0;
+    private long headingTimerStart  = 0;
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
-    /** Fixed velocity, rapid fire, no velocity FF. */
-    public Shoot(Follower follower, int ballsToFire, double overrideVelocity, boolean isBlue) {
-        this(follower, ballsToFire, overrideVelocity, isBlue, FiringMode.RAPID, false);
-    }
-
-    /** Fixed velocity, chosen firing mode, no velocity FF. */
-    public Shoot(Follower follower, int ballsToFire, double overrideVelocity,
-                 boolean isBlue, FiringMode firingMode) {
-        this(follower, ballsToFire, overrideVelocity, isBlue, firingMode, false);
+    /** Fixed velocity, no velocity FF. */
+    public Shoot(Follower follower, long feedTimeMs, double overrideVelocity, boolean isBlue) {
+        this(follower, feedTimeMs, overrideVelocity, isBlue, false);
     }
 
     /** Full constructor. */
-    public Shoot(Follower follower, int ballsToFire, double overrideVelocity,
-                 boolean isBlue, FiringMode firingMode, boolean velocityFF) {
+    public Shoot(Follower follower, long feedTimeMs, double overrideVelocity,
+                 boolean isBlue, boolean velocityFF) {
         this.follower         = follower;
-        this.ballsToFire      = ballsToFire;
+        this.feedTimeMs       = feedTimeMs;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
-        this.firingMode       = firingMode;
         this.velocityFF       = velocityFF;
         addRequirements(robot.flywheel, robot.conveyor);
     }
@@ -107,37 +66,33 @@ public class Shoot extends CommandBase {
 
     @Override
     public void initialize() {
-        shotsFired   = 0;
-        detector     = new BallDetector();
-        spinUpStart  = System.currentTimeMillis();
-        drainStart   = 0;
-        lastBallTime = 0;
-        state             = State.SETTLING;
+        spinUpStart        = 0;
+        feedStart          = 0;
+        drainStart         = 0;
         headingSettleStart = 0;
         headingTimerStart  = System.currentTimeMillis();
-        telemetryM = new JoinedTelemetry(PanelsTelemetry.INSTANCE.getFtcTelemetry(), telemetry);
+        state              = State.SETTLING;
         updateFlywheel();
     }
 
     @Override
     public void execute() {
         updateFlywheel();
+
         switch (state) {
             case SETTLING:
-                boolean headingOk = headingError() < Constants.AIM_ANGLE_TOLERANCE;
+                boolean headingOk       = headingError() < Constants.AIM_ANGLE_TOLERANCE;
                 boolean headingTimedOut = System.currentTimeMillis() - headingTimerStart > HEADING_TIMEOUT_MS;
 
                 if (headingOk) {
                     if (headingSettleStart == 0) headingSettleStart = System.currentTimeMillis();
-                    // Must stay within tolerance for HEADING_SETTLE_MS before proceeding
                     if (System.currentTimeMillis() - headingSettleStart >= HEADING_SETTLE_MS) {
                         spinUpStart = System.currentTimeMillis();
                         state = State.SPINNING;
                     }
                 } else {
-                    headingSettleStart = 0; // reset — heading drifted back out
+                    headingSettleStart = 0;
                     if (headingTimedOut) {
-                        // Heading never settled — fire anyway
                         spinUpStart = System.currentTimeMillis();
                         state = State.SPINNING;
                     }
@@ -148,6 +103,7 @@ public class Shoot extends CommandBase {
                 boolean ready    = robot.flywheel.atTarget();
                 boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
                 if (ready || timedOut) {
+                    feedStart = System.currentTimeMillis();
                     robot.conveyor.feed(true);
                     state = State.FEEDING;
                 }
@@ -155,36 +111,9 @@ public class Shoot extends CommandBase {
 
             case FEEDING:
                 robot.conveyor.feed(true);
-                if (lastBallTime == 0) lastBallTime = System.currentTimeMillis();
-
-                if (System.currentTimeMillis() - lastBallTime > NO_BALL_TIMEOUT_MS) {
+                if (System.currentTimeMillis() - feedStart >= feedTimeMs) {
                     drainStart = System.currentTimeMillis();
                     state = State.DRAINING;
-                    break;
-                }
-
-                if (detector.update()) {
-                    shotsFired++;
-                    lastBallTime = System.currentTimeMillis();
-                    if (shotsFired >= ballsToFire) {
-                        drainStart = System.currentTimeMillis();
-                        state = State.DRAINING;
-                    } else if (firingMode == FiringMode.PACED) {
-                        robot.conveyor.stop();
-                        spinUpStart = System.currentTimeMillis();
-                        state = State.RECOVERING;
-                    }
-                    // RAPID: gate stays open, BallDetector cooldown handles spacing
-                }
-                break;
-
-            case RECOVERING:
-                boolean recovered   = robot.flywheel.atTarget();
-                boolean recTimedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
-                if (recovered || recTimedOut) {
-                    lastBallTime = System.currentTimeMillis();
-                    robot.conveyor.feed(true);
-                    state = State.FEEDING;
                 }
                 break;
 
@@ -202,9 +131,7 @@ public class Shoot extends CommandBase {
     }
 
     @Override
-    public boolean isFinished() {
-        return state == State.DONE;
-    }
+    public boolean isFinished() { return state == State.DONE; }
 
     @Override
     public void end(boolean interrupted) {
@@ -213,30 +140,23 @@ public class Shoot extends CommandBase {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
     private void updateFlywheel() {
         if (overrideVelocity > 0) {
             robot.flywheel.setVelocity(overrideVelocity);
         } else if (velocityFF) {
-            robot.flywheel.setVelocityForDistanceWithVelocityFF(
-                    distanceToGoal(), recessionalVelocity());
+            robot.flywheel.setVelocityForDistanceWithVelocityFF(distanceToGoal(), recessionalVelocity());
         } else {
             robot.flywheel.setVelocityForDistance(distanceToGoal());
         }
     }
 
-    /** Absolute heading error between current robot heading and the angle to the goal (radians). */
     private double headingError() {
         Pose goal = Poses.goal(isBlue);
         Pose pos  = follower.getPose();
-        double targetHeading = Math.atan2(
-                goal.getX() - pos.getX(),
-                goal.getY() - pos.getY()
-        ) + Math.PI;
-
-        // Normalize both angles to (-π, π] before differencing
-        // to avoid wrap-around issues near ±π boundary on Red
-        double th = ((targetHeading + Math.PI) % (2 * Math.PI)) - Math.PI;
-        double ph = ((pos.getHeading() + Math.PI) % (2 * Math.PI)) - Math.PI;
+        double targetHeading = Math.atan2(goal.getX() - pos.getX(), goal.getY() - pos.getY()) + Math.PI;
+        double th    = ((targetHeading + Math.PI) % (2 * Math.PI)) - Math.PI;
+        double ph    = ((pos.getHeading() + Math.PI) % (2 * Math.PI)) - Math.PI;
         double error = th - ph;
         while (error >  Math.PI) error -= 2 * Math.PI;
         while (error < -Math.PI) error += 2 * Math.PI;
@@ -245,21 +165,15 @@ public class Shoot extends CommandBase {
 
     private double distanceToGoal() {
         Pose goal = Poses.goal(isBlue);
-        double dx = goal.getX() - follower.getPose().getX();
-        double dy = goal.getY() - follower.getPose().getY();
-        return Math.hypot(dx, dy);
+        return Math.hypot(goal.getX() - follower.getPose().getX(), goal.getY() - follower.getPose().getY());
     }
 
-    /** Robot velocity projected onto the away-from-goal axis (positive = moving away). */
     private double recessionalVelocity() {
         Pose goal = Poses.goal(isBlue);
         Pose pos  = follower.getPose();
-        double dx   = pos.getX() - goal.getX();
-        double dy   = pos.getY() - goal.getY();
+        double dx = pos.getX() - goal.getX(), dy = pos.getY() - goal.getY();
         double dist = Math.hypot(dx, dy);
         if (dist < 1e-6) return 0;
-        double vx = follower.getVelocity().getXComponent();
-        double vy = follower.getVelocity().getYComponent();
-        return (vx * dx + vy * dy) / dist;
+        return (follower.getVelocity().getXComponent() * dx + follower.getVelocity().getYComponent() * dy) / dist;
     }
 }

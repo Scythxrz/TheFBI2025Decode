@@ -23,7 +23,7 @@ public class Constants {
 
     // ─── Voltage ──────────────────────────────────────────────────────────────
     public static double VOLTAGE_SENSOR_POLLING_RATE = 5.0;  // Hz
-    public static double NOMINAL_VOLTAGE             = 13.0; // Volts
+    public static double NOMINAL_VOLTAGE             = 13.5; // Volts
 
     // ─── Shooter / Flywheel ───────────────────────────────────────────────────
     /**
@@ -45,7 +45,7 @@ public class Constants {
      *   kD  — derivative: dampens overshoot on spin-up.
      */
     public static double SHOOTER_KF = 0.00038;  // ≈ 1 / 2400
-    public static double SHOOTER_KP = 0.0045;
+    public static double SHOOTER_KP = 0.01;
     public static double SHOOTER_KI = 0.0;
     public static double SHOOTER_KD = 0.0;
 
@@ -122,7 +122,8 @@ public class Constants {
     public static long   AIM_SETTLE_TIME_MS    = 120;  // ms heading must be stable before firing
 
     // Paced fire: time between shots (ms)
-    public static long PACED_SHOT_FEED_TIME_MS = 500;
+    /** How long the conveyor runs once the flywheel is at speed. Tune on the field (e.g. 3 balls ~1500 ms). */
+    public static long SHOOT_FEED_TIME_MS = 750;
 
     // ─── Goal pose [x_inches, y_inches] (Pedro field coords) ─────────────────
     // Blue alliance default — mirrored for Red in TeleOp initialize()

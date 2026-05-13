@@ -185,7 +185,7 @@ public class Flywheel extends SubsystemBase {
         double rawFactor = QUAD_A * Math.pow(voltage - NOMINAL_VOLTAGE, 2) + MIN_COMP_FACTOR;
         double compFactor = Math.min(Math.max(rawFactor, MIN_COMP_FACTOR), MAX_COMP_FACTOR);
 
-        veloCompKF = SHOOTER_KF * (1.0 + compFactor * ((NOMINAL_VOLTAGE / voltage) - 1.0));
+        veloCompKF = SHOOTER_KF * (NOMINAL_VOLTAGE / voltage); //(1.0 + compFactor * ((NOMINAL_VOLTAGE / voltage) - 1.0));
 
         // Pick up any live Dashboard changes to the gain constants
         controller.setPIDF(SHOOTER_KP, SHOOTER_KI, SHOOTER_KD, veloCompKF);
