@@ -316,7 +316,7 @@ public class Auton extends CommandOpMode {
         return new MoveAndShoot(follower, p(to), SHOOT_FEED_TIME_MS, vel, isBlue, hm);
     }
     private MoveAndShoot shootF(Pose to, double vel, PiecewiseHeading hm) {
-        return new MoveAndShoot(follower, p(to), 3000, vel, isBlue, hm);
+        return new MoveAndShoot(follower, p(to), 3000, vel, isBlue, hm, true);
     }
     private WaitCommand wait(double s) {
         return new WaitCommand((long) s);

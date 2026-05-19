@@ -31,6 +31,7 @@ public class Shoot extends CommandBase {
     private final double   overrideVelocity;
     private final boolean  isBlue;
     private final boolean  velocityFF;
+    private final boolean  slowFeed;
 
     private static final long SPIN_UP_TIMEOUT_MS = 500;
     private static final long POST_SHOT_DRAIN_MS = 150;
@@ -46,19 +47,26 @@ public class Shoot extends CommandBase {
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
-    /** Fixed velocity, no velocity FF. */
+    /** Fixed velocity, no velocity FF, full conveyor speed. */
     public Shoot(Follower follower, long feedTimeMs, double overrideVelocity, boolean isBlue) {
-        this(follower, feedTimeMs, overrideVelocity, isBlue, false);
+        this(follower, feedTimeMs, overrideVelocity, isBlue, false, false);
     }
 
-    /** Full constructor. */
+    /** Fixed velocity, optional velocity FF, full conveyor speed. */
     public Shoot(Follower follower, long feedTimeMs, double overrideVelocity,
                  boolean isBlue, boolean velocityFF) {
+        this(follower, feedTimeMs, overrideVelocity, isBlue, velocityFF, false);
+    }
+
+    /** Full constructor — slowFeed=true uses CONVEYOR_FAR_SPEED (0.4), like PACED mode in TeleOp. */
+    public Shoot(Follower follower, long feedTimeMs, double overrideVelocity,
+                 boolean isBlue, boolean velocityFF, boolean slowFeed) {
         this.follower         = follower;
         this.feedTimeMs       = feedTimeMs;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
         this.velocityFF       = velocityFF;
+        this.slowFeed         = slowFeed;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -104,13 +112,13 @@ public class Shoot extends CommandBase {
                 boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
                 if (ready || timedOut) {
                     feedStart = System.currentTimeMillis();
-                    robot.conveyor.feed(true);
+                    robot.conveyor.feed(!slowFeed);
                     state = State.FEEDING;
                 }
                 break;
 
             case FEEDING:
-                robot.conveyor.feed(true);
+                robot.conveyor.feed(!slowFeed);
                 if (System.currentTimeMillis() - feedStart >= feedTimeMs) {
                     drainStart = System.currentTimeMillis();
                     state = State.DRAINING;

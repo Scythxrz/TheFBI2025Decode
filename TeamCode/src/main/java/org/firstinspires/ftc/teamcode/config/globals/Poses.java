@@ -37,7 +37,7 @@ public class Poses {
     public static final Pose CLOSE_GPP_1 = new Pose(56.381, 31.462);
 
     // ─── Far-side sequences ───────────────────────────────────────────────────
-    public static final Pose FAR_SCORE  = new Pose(58.72,   14,    rad(-63));
+    public static final Pose FAR_SCORE  = new Pose(61.72,   19,    rad(-66));
 
     public static final Pose FAR_SPIKE_1 = new Pose(8, 25, rad(-90));
     public static final Pose FAR_SPIKE_2 = new Pose(8, 9.3, rad(-90));
