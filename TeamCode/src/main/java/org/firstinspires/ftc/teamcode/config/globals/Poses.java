@@ -20,7 +20,7 @@ public class Poses {
 
     // ─── Start poses ───────────────────────────────────────────────────────
 
-    public static final Pose START_CLOSE = new Pose(17.6, 120.7, rad(315));
+    public static final Pose START_CLOSE = new Pose(17, 120.7, rad(315));
     public static final Pose START_FAR   = new Pose(48.5,   9.3,  rad(270));
 
     // ─── Close-side sequences ─────────────────────────────────────────────────
@@ -29,7 +29,7 @@ public class Poses {
     public static final Pose CLOSE_END   = new Pose(54.853,   102.53, rad(320));
     public static final Pose CLOSE_PGP   = new Pose(13,   64);
     public static final Pose CLOSE_PGP_1 = new Pose(35.292, 55.076);
-    public static final Pose CLOSE_GATE = new Pose(8.5, 58.8, rad(155));
+    public static final Pose CLOSE_GATE = new Pose(8.5, 58.8, rad(153));
     public static final Pose CLOSE_GATE_1 = new Pose(24.811, 47.537, rad(120));
     public static final Pose CLOSE_PPG = new Pose(22, 83.8);
     public static final Pose CLOSE_PPG_1 = new Pose(35.574, 84.051);

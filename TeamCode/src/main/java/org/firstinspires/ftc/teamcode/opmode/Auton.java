@@ -146,7 +146,11 @@ public class Auton extends CommandOpMode {
         }
 
         if (loopTimer == null) loopTimer = new ElapsedTime();
-        robot.flywheel.setVelocity(1700);
+        if (selectedStart == StartPos.CLOSE) {
+            robot.flywheel.setVelocity(1700);
+        } else {
+            robot.flywheel.setVelocity(2300);
+        }
         follower.update();
         RobotDrawing.drawDebug(follower);
 
@@ -188,27 +192,27 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shoot(CLOSE_SCORE, 1625, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseScore),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 1625, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseScore),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1625, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseScore),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1625, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseScore),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1625, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseScore),
                 // Pick up PPG Spike Mark
                 intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
                 // Score 3
-                shoot(CLOSE_END, 1575, piecewiseScore)
+                shoot(CLOSE_END, 1650, piecewiseScore)
         );
     }
 
@@ -217,29 +221,33 @@ public class Auton extends CommandOpMode {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
+        PiecewiseHeading piecewiseTest = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .constant(0.6, 1.0, Math.toRadians(307));  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shoot(CLOSE_SCORE, 0, piecewiseScore),
+                intake(CLOSE_SCORE),
+                new Shoot(follower, 750, 1750, isBlue),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 0, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseTest),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 0, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseTest),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 0, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseTest),
                 // Pick up PPG Spike Mark
                 intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 0, piecewiseScore),
+                shoot(CLOSE_SCORE, 1750, piecewiseTest),
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
-                shoot(CLOSE_END, 0, piecewiseScore)
+                shoot(CLOSE_END, 1700, piecewiseScore)
         );
     }
 
@@ -308,12 +316,23 @@ public class Auton extends CommandOpMode {
         return new MoveAndShoot(follower, p(to), SHOOT_FEED_TIME_MS, vel, isBlue, hm);
     }
     private MoveAndShoot shootF(Pose to, double vel, PiecewiseHeading hm) {
-        return new MoveAndShoot(follower, p(to), SHOOT_FEED_TIME_MS, vel, isBlue, hm);
+        return new MoveAndShoot(follower, p(to), 3000, vel, isBlue, hm);
     }
     private WaitCommand wait(double s) {
         return new WaitCommand((long) s);
     }
     private SequentialCommandGroup intake(Pose[] to) {
+        return new SequentialCommandGroup(
+                new InstantCommand(() -> robot.flywheel.off()),
+                new ParallelCommandGroup(
+                        new SetIntake(MotorState.FORWARD),
+                        new InstantCommand(() -> robot.conveyor.forward()),
+                        new DriveToPose(follower, p(to), TANGENTIAL, 1)
+                ),
+                new SetIntake(MotorState.STOP)
+        );
+    }
+    private SequentialCommandGroup intake(Pose to) {
         return new SequentialCommandGroup(
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(

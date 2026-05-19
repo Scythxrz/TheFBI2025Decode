@@ -19,6 +19,7 @@ import com.seattlesolvers.solverslib.gamepad.GamepadKeys;
 
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.LaunchSequence;
 import org.firstinspires.ftc.teamcode.config.commandbase.commands.SetIntake;
+import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Conveyor;
 import org.firstinspires.ftc.teamcode.config.commandbase.subsystems.Intake;
 import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
@@ -276,7 +277,10 @@ public class Teleop extends CommandOpMode {
         distanceToGoal = Math.hypot(dx, dy);
         headingError   = normalizeAngle(Math.atan2(dy, dx) + Math.PI - follower.getPose().getHeading());
         gateError = normalizeAngle(135 - follower.getPose().getHeading());
-
+        // Update ball indicator led
+        if (robot.conveyor.getConveyorVelocity() < 500 && robot.conveyor.getConveyorVelocity() > 75) {
+            robot.led.setPosition(0.8);
+        } else { robot.led.setPosition(0); }
         // ── Drive ─────────────────────────────────────────────────────────────
         double turnPower;
         if (headingLock || gateLock) {
@@ -285,7 +289,7 @@ public class Teleop extends CommandOpMode {
             } else {
                 headingController.updateError(gateError);
             }
-            double kV    = -0.5;
+            double kV    = -0.75;
             double denom = dx * dx + dy * dy;
             double headingVelFF = denom > 1e-6
                     ? (dx * follower.getVelocity().getYComponent() - dy * follower.getVelocity().getXComponent()) / denom
@@ -314,6 +318,7 @@ public class Teleop extends CommandOpMode {
         telemetryM.addData("Flywheel Ready",  robot.flywheel.atTarget());
         telemetryM.addData("Intake State",    Intake.motorState);
         telemetryM.addData("Alliance",        ALLIANCE_COLOR);
+        telemetryM.addData("Conveyor Velocity", robot.conveyor.getConveyorVelocity());
 
         robot.updateLoop(telemetryM);
     }

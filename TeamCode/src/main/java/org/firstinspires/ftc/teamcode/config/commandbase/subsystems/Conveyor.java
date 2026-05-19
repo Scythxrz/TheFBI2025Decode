@@ -71,6 +71,9 @@ public class Conveyor extends SubsystemBase {
         robot.conveyorMotor.set(0);
         robot.stopperServo.setPosition(STOPPER_CLOSED);
     }
+    public double getConveyorVelocity() {
+        return robot.conveyorMotor.getVelocity();
+    }
 
 
     // ─── Periodic ─────────────────────────────────────────────────────────────

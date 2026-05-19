@@ -58,6 +58,9 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
     // Gate / stopper servo
     public Servo stopperServo;           // "stopper"
 
+    // LED
+    public Servo led;
+
     // Vision
     public Limelight3A limelight;        // "limelight"
 
@@ -115,6 +118,11 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
         // Gate servo — opens to let balls through into the flywheel
         stopperServo = hwMap.get(Servo.class, "stopper");
         stopperServo.setPosition(STOPPER_CLOSED);
+
+        // led - indicates amount of balls in robot
+
+        led = hwMap.get(Servo.class, "led");
+        led.setPosition(0);
 
         // Limelight — start on pipeline 0 (AprilTag)
         limelight = hwMap.get(Limelight3A.class, "limelight");

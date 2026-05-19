@@ -72,9 +72,16 @@ public class Constants {
     // Shooter lookup table — {distance_inches, target_velocity_ticks_per_sec}
     // Matches the table from FBI2025 Shooter.java / FBI2025 Flywheel.java
     public static final double[][] SHOOTER_LUT = {
-            {82, 1600},
-            {92, 1650},
-            {102, 1700}
+            {82, 1650},
+            {92, 1700},
+            {102, 1750},
+            {111.2026,1950},
+            {114.2744,2000},
+            {120.4631,2050},
+            {124.8829,2200},
+            {130.4457,2350},
+            {134.4726,2375},
+            {141.0453,2475}
             /*{50.45,   1650},
             {60.2258, 1700},
             {65.14,   1725},
@@ -104,7 +111,7 @@ public class Constants {
     public static double BALL_DETECTION_THRESHOLD = 600; // ticks/s
 
     // ─── Conveyor ─────────────────────────────────────────────────────────────
-    public static double CONVEYOR_CLOSE_SPEED = 0.7;
+    public static double CONVEYOR_CLOSE_SPEED = 1;
     public static double CONVEYOR_INTAKE_SPEED = 1.0;
     public static double CONVEYOR_FAR_SPEED = 0.4;
     public static double CONVEYOR_REVERSE_SPEED = -1.0;
