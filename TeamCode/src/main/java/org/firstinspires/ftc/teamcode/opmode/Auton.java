@@ -147,7 +147,7 @@ public class Auton extends CommandOpMode {
 
         if (loopTimer == null) loopTimer = new ElapsedTime();
         if (selectedStart == StartPos.CLOSE) {
-            robot.flywheel.setVelocity(1700);
+            robot.flywheel.setVelocity(1675);
         } else {
             robot.flywheel.setVelocity(2300);
         }
@@ -223,19 +223,23 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         PiecewiseHeading piecewiseTest = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .constant(0.6, 1.0, Math.toRadians(307));  // back of robot faces goal for last 40%
+                .constant(0.6, 1.0, Math.toRadians(304));  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
                 intake(CLOSE_SCORE),
-                new Shoot(follower, 750, 1750, isBlue),
+
+                new ParallelCommandGroup(
+                    new InstantCommand(() -> robot.conveyor.feed(true)),
+                    new Shoot(follower, 750, 1750, isBlue)
+                ),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 1750, piecewiseTest),
+                shoot(CLOSE_SCORE, 1700, piecewiseTest),
                 // Gate intake
                 gate(),
                 // Score 3
-                shoot(CLOSE_SCORE, 1750, piecewiseTest),
+                shoot(CLOSE_SCORE, 1700, piecewiseTest),
                 // Gate intake
                 gate(),
                 // Score 3
