@@ -275,7 +275,7 @@ public class ShooterTest extends CommandOpMode {
         } else {
             turnPower = -gamepad1.right_stick_x * 0.75;
         }
-        robot.flywheel.setVelocity(power);
+        //robot.flywheel.setVelocity(power);
         follower.setTeleOpDrive(
                 gamepad1.left_stick_y * invert,
                 gamepad1.left_stick_x * invert,

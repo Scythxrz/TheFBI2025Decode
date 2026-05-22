@@ -6,7 +6,9 @@ import com.bylazar.telemetry.JoinedTelemetry;
 import com.bylazar.telemetry.TelemetryManager;
 import com.qualcomm.hardware.limelightvision.Limelight3A;
 import com.qualcomm.hardware.lynx.LynxModule;
+import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.DcMotorEx;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.hardware.VoltageSensor;
@@ -47,6 +49,7 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
     public MotorEx rf, rr, lf, lr;
     // Shooting mechanism
     public DcMotorEx shooterMotor;       // "shooter"
+    public DcMotorEx shooterMotor2;
     public Motor.Encoder shooterEncoder; // piggybacks on shooterMotor
 
     // Conveyor / feeder
@@ -100,9 +103,11 @@ public class Robot extends com.seattlesolvers.solverslib.command.Robot {
         rr.setRunMode(Motor.RunMode.RawPower);
 
         // Shooter motor — uses DcMotorEx directly for velocity/PIDF control
-        shooterMotor = hwMap.get(DcMotorEx.class, "shooter");
+        shooterMotor = hwMap.get(DcMotorEx.class, "shooter1");
+        shooterMotor2 = hwMap.get(DcMotorEx.class, "shooter2");
         shooterMotor.setZeroPowerBehavior(com.qualcomm.robotcore.hardware.DcMotor.ZeroPowerBehavior.BRAKE);
-        shooterEncoder = new Motor(hwMap, "shooter").encoder;
+        shooterMotor2.setDirection(DcMotorSimple.Direction.REVERSE);
+        shooterEncoder = new Motor(hwMap, "shooter1").encoder;
 
         // Conveyor
         conveyorMotor = new MotorEx(hwMap, "conv");

@@ -50,6 +50,7 @@ public class Flywheel extends SubsystemBase {
     public void setPower(double power) {
         //robot.shooterMotor.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
         robot.shooterMotor.setPower(power);
+        robot.shooterMotor2.setPower(power);
     }
 
     /**
@@ -117,6 +118,7 @@ public class Flywheel extends SubsystemBase {
         targetVelocity = 0;
         controller.reset();
         robot.shooterMotor.setPower(0);
+        robot.shooterMotor2.setPower(0);
     }
 
     /** Current measured velocity in ticks/second. */
@@ -193,12 +195,14 @@ public class Flywheel extends SubsystemBase {
         if (targetVelocity <= 0) {
             controller.reset();
             robot.shooterMotor.setPower(0);
+            robot.shooterMotor2.setPower(0);
             return;
         }
 
         double output = controller.calculate(getVelocity(), targetVelocity);
         // Clamp to [0, 1] — the flywheel only spins in one direction
         robot.shooterMotor.setPower(Math.max(0, Math.min(1, output)));
+        robot.shooterMotor2.setPower(Math.max(0, Math.min(1, output)));
     }
 
     // ─── Private helpers ──────────────────────────────────────────────────────
