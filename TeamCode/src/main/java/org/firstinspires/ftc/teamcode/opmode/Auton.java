@@ -192,7 +192,12 @@ public class Auton extends CommandOpMode {
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
-                shoot(CLOSE_SCORE, 1750, piecewiseScore),
+                intake(CLOSE_SCORE),
+
+                new ParallelCommandGroup(
+                        new InstantCommand(() -> robot.conveyor.feed(true)),
+                        new Shoot(follower, 750, 1750, isBlue)
+                ),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
@@ -251,7 +256,7 @@ public class Auton extends CommandOpMode {
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
-                shoot(CLOSE_END, 1700, piecewiseScore)
+                shoot(CLOSE_END, 1650, piecewiseScore)
         );
     }
 

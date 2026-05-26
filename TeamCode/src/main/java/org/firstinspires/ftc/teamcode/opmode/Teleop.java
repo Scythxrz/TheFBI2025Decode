@@ -86,7 +86,7 @@ public class Teleop extends CommandOpMode {
 
     // Heading PIDF controller for aimbot — tune kP in Constants if tracking feels sluggish or oscillates
     private final PIDFController headingController =
-            new PIDFController(new com.pedropathing.control.PIDFCoefficients(0.7, 0, 0.045, 0.025));
+            new PIDFController(new com.pedropathing.control.PIDFCoefficients(0.5, 0, 0.04, 0.025));
 
     // Reset poses (field coordinates, Pedro system)
     public static double[] RESET_RED  = {9,   8,  90};

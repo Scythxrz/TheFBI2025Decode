@@ -102,7 +102,6 @@ public class LaunchSequence extends CommandBase {
 
         boolean flywheelReady  = flywheel.atTarget();
         boolean headingSettled = Math.abs(headingErrorSupplier.get()) < Constants.AIM_ANGLE_TOLERANCE;
-        boolean spinTimedOut   = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
         boolean readyToFire    = (flywheelReady && headingSettled); //|| spinTimedOut;
 
         switch (state) {
