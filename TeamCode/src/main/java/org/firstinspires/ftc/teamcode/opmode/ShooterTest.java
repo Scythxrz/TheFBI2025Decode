@@ -115,7 +115,6 @@ public class ShooterTest extends CommandOpMode {
         // Y — RAPID fire (gate stays open between balls — close range)
         driver.getGamepadButton(GamepadKeys.Button.Y).whileActiveContinuous(
                 new ParallelCommandGroup(
-                        //new InstantCommand(() -> ),
                         new InstantCommand(() -> robot.gate.open()),
                         new InstantCommand(()-> robot.conveyor.forward()),
                         new InstantCommand(() -> robot.intake.forward())
@@ -275,7 +274,7 @@ public class ShooterTest extends CommandOpMode {
         } else {
             turnPower = -gamepad1.right_stick_x * 0.75;
         }
-        //robot.flywheel.setVelocity(power);
+        robot.flywheel.setVelocity(power);
         follower.setTeleOpDrive(
                 gamepad1.left_stick_y * invert,
                 gamepad1.left_stick_x * invert,
