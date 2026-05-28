@@ -111,6 +111,8 @@ public class Constants {
     // Paced fire: time between shots (ms)
     /** How long the conveyor runs once the flywheel is at speed. Tune on the field (e.g. 3 balls ~1500 ms). */
     public static long SHOOT_FEED_TIME_MS = 750;
+    /** Max ms to wait for flywheel recovery between paced balls before firing anyway. */
+    public static long PACED_RECOVERY_TIMEOUT_MS = 600;
 
     // ─── Goal pose [x_inches, y_inches] (Pedro field coords) ─────────────────
     // Blue alliance default — mirrored for Red in TeleOp initialize()

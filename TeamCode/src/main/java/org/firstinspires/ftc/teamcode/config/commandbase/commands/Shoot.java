@@ -9,12 +9,22 @@ import org.firstinspires.ftc.teamcode.config.globals.Poses;
 import org.firstinspires.ftc.teamcode.config.globals.Robot;
 
 /**
- * Shoot — spins up the flywheel and runs the conveyor for a fixed duration.
+ * Shoot — spins up the flywheel and feeds balls into it.
  *
- * State machine: SETTLING → SPINNING → FEEDING → DRAINING → DONE
+ * Two feeding modes, selected by the {@code paced} constructor flag:
  *
- * Tuning: set Constants.SHOOT_FEED_TIME_MS to how long the conveyor should run
- * after the flywheel reaches speed. Tune on the field to match your magazine size.
+ *   TIMED (paced=false, default):
+ *     Runs the conveyor continuously for feedTimeMs then stops.
+ *     State machine: SETTLING → SPINNING → FEEDING → DRAINING → DONE
+ *     Use for close-zone shots where the flywheel recovers quickly.
+ *
+ *   PACED (paced=true):
+ *     After each ball is detected (velocity drop in Flywheel.ballDetected()),
+ *     the conveyor pauses and waits for the flywheel to return to target speed
+ *     before feeding the next ball. feedTimeMs is a hard total-time safety cap
+ *     that prevents the command from hanging if ball detection fails.
+ *     State machine: SETTLING → SPINNING → FEEDING ↔ RECOVERING → DRAINING → DONE
+ *     Use for far-zone shots where the flywheel needs time to recover.
  *
  * Velocity modes:
  *   overrideVelocity > 0  — fixed ticks/s target
@@ -23,15 +33,16 @@ import org.firstinspires.ftc.teamcode.config.globals.Robot;
  */
 public class Shoot extends CommandBase {
 
-    public enum State { SETTLING, SPINNING, FEEDING, DRAINING, DONE }
+    public enum State { SETTLING, SPINNING, FEEDING, RECOVERING, DRAINING, DONE }
     private State state;
 
     private final Follower follower;
-    private final long     feedTimeMs;
+    private final long     feedTimeMs;       // total time cap (also the feed duration in timed mode)
     private final double   overrideVelocity;
     private final boolean  isBlue;
     private final boolean  velocityFF;
     private final boolean  slowFeed;
+    private final boolean  paced;            // true = wait for flywheel recovery between each ball
 
     private static final long SPIN_UP_TIMEOUT_MS = 500;
     private static final long POST_SHOT_DRAIN_MS = 150;
@@ -40,33 +51,35 @@ public class Shoot extends CommandBase {
 
     private final Robot robot = Robot.getInstance();
     private long spinUpStart        = 0;
-    private long feedStart          = 0;
+    private long feedStart          = 0;     // set once when FEEDING begins; used as total-time cap
+    private long recoverStart       = 0;     // set each time RECOVERING begins
     private long drainStart         = 0;
     private long headingSettleStart = 0;
     private long headingTimerStart  = 0;
 
     // ─── Constructors ─────────────────────────────────────────────────────────
 
-    /** Fixed velocity, no velocity FF, full conveyor speed. */
+    /** Timed mode, full conveyor speed. */
     public Shoot(Follower follower, long feedTimeMs, double overrideVelocity, boolean isBlue) {
-        this(follower, feedTimeMs, overrideVelocity, isBlue, false, false);
+        this(follower, feedTimeMs, overrideVelocity, isBlue, false, false, false);
     }
 
-    /** Fixed velocity, optional velocity FF, full conveyor speed. */
+    /** Timed mode, optional velocity FF. */
     public Shoot(Follower follower, long feedTimeMs, double overrideVelocity,
                  boolean isBlue, boolean velocityFF) {
-        this(follower, feedTimeMs, overrideVelocity, isBlue, velocityFF, false);
+        this(follower, feedTimeMs, overrideVelocity, isBlue, velocityFF, false, false);
     }
 
-    /** Full constructor — slowFeed=true uses CONVEYOR_FAR_SPEED (0.4), like PACED mode in TeleOp. */
+    /** Full constructor. slowFeed uses CONVEYOR_FAR_SPEED; paced waits for flywheel recovery. */
     public Shoot(Follower follower, long feedTimeMs, double overrideVelocity,
-                 boolean isBlue, boolean velocityFF, boolean slowFeed) {
+                 boolean isBlue, boolean velocityFF, boolean slowFeed, boolean paced) {
         this.follower         = follower;
         this.feedTimeMs       = feedTimeMs;
         this.overrideVelocity = overrideVelocity;
         this.isBlue           = isBlue;
         this.velocityFF       = velocityFF;
         this.slowFeed         = slowFeed;
+        this.paced            = paced;
         addRequirements(robot.flywheel, robot.conveyor);
     }
 
@@ -76,6 +89,7 @@ public class Shoot extends CommandBase {
     public void initialize() {
         spinUpStart        = 0;
         feedStart          = 0;
+        recoverStart       = 0;
         drainStart         = 0;
         headingSettleStart = 0;
         headingTimerStart  = System.currentTimeMillis();
@@ -88,51 +102,70 @@ public class Shoot extends CommandBase {
         updateFlywheel();
 
         switch (state) {
-            case SETTLING:
-                boolean headingOk       = headingError() < Constants.AIM_ANGLE_TOLERANCE;
-                boolean headingTimedOut = System.currentTimeMillis() - headingTimerStart > HEADING_TIMEOUT_MS;
-
+            case SETTLING: {
+                boolean headingOk      = headingError() < Constants.AIM_ANGLE_TOLERANCE;
+                boolean headingExpired = elapsed(headingTimerStart) > HEADING_TIMEOUT_MS;
                 if (headingOk) {
-                    if (headingSettleStart == 0) headingSettleStart = System.currentTimeMillis();
-                    if (System.currentTimeMillis() - headingSettleStart >= HEADING_SETTLE_MS) {
-                        spinUpStart = System.currentTimeMillis();
+                    if (headingSettleStart == 0) headingSettleStart = now();
+                    if (elapsed(headingSettleStart) >= HEADING_SETTLE_MS) {
+                        spinUpStart = now();
                         state = State.SPINNING;
                     }
                 } else {
                     headingSettleStart = 0;
-                    if (headingTimedOut) {
-                        spinUpStart = System.currentTimeMillis();
-                        state = State.SPINNING;
-                    }
+                    if (headingExpired) { spinUpStart = now(); state = State.SPINNING; }
                 }
                 break;
-
-            case SPINNING:
-                boolean ready    = robot.flywheel.atTarget();
-                boolean timedOut = System.currentTimeMillis() - spinUpStart > SPIN_UP_TIMEOUT_MS;
-                if (ready || timedOut) {
-                    feedStart = System.currentTimeMillis();
+            }
+            case SPINNING: {
+                boolean ready   = robot.flywheel.atTarget();
+                boolean expired = elapsed(spinUpStart) > SPIN_UP_TIMEOUT_MS;
+                if (ready || expired) {
+                    feedStart = now();
                     robot.conveyor.feed(!slowFeed);
                     state = State.FEEDING;
                 }
                 break;
-
-            case FEEDING:
-                robot.conveyor.feed(!slowFeed);
-                if (System.currentTimeMillis() - feedStart >= feedTimeMs) {
-                    drainStart = System.currentTimeMillis();
+            }
+            case FEEDING: {
+                // Hard total-time cap — prevents the command hanging if detection fails
+                if (elapsed(feedStart) >= feedTimeMs) {
+                    drainStart = now();
                     state = State.DRAINING;
+                    break;
+                }
+                robot.conveyor.feed(!slowFeed);
+                // In paced mode, detect each ball and pause for flywheel recovery
+                if (paced && robot.flywheel.ballDetected()) {
+                    robot.conveyor.stop();
+                    recoverStart = now();
+                    state = State.RECOVERING;
                 }
                 break;
-
-            case DRAINING:
-                if (System.currentTimeMillis() - drainStart >= POST_SHOT_DRAIN_MS) {
+            }
+            case RECOVERING: {
+                // Hard total-time cap still applies
+                if (elapsed(feedStart) >= feedTimeMs) {
+                    drainStart = now();
+                    state = State.DRAINING;
+                    break;
+                }
+                boolean recovered = robot.flywheel.atTarget();
+                boolean timedOut  = elapsed(recoverStart) > Constants.PACED_RECOVERY_TIMEOUT_MS;
+                if (recovered || timedOut) {
+                    robot.conveyor.feed(!slowFeed);
+                    state = State.FEEDING;
+                }
+                break;
+            }
+            case DRAINING: {
+                if (elapsed(drainStart) >= POST_SHOT_DRAIN_MS) {
                     robot.conveyor.stop();
                     robot.flywheel.off();
                     state = State.DONE;
                 }
                 break;
-
+            }
             case DONE:
                 break;
         }
@@ -148,6 +181,9 @@ public class Shoot extends CommandBase {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    private long now() { return System.currentTimeMillis(); }
+    private long elapsed(long start) { return now() - start; }
 
     private void updateFlywheel() {
         if (overrideVelocity > 0) {

@@ -147,7 +147,7 @@ public class Auton extends CommandOpMode {
 
         if (loopTimer == null) loopTimer = new ElapsedTime();
         if (selectedStart == StartPos.CLOSE) {
-            robot.flywheel.setVelocity(1675);
+            robot.flywheel.setVelocity(1625);
         } else {
             robot.flywheel.setVelocity(2300);
         }
@@ -226,16 +226,23 @@ public class Auton extends CommandOpMode {
         PiecewiseHeading piecewiseScore = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .facingAwayFromPoint(0.6, 1.0, p(GOAL_BLUE).getX(), p(GOAL_BLUE).getY());  // back of robot faces goal for last 40%
+        int heading = 304;
+        if (!isBlue) { heading = 240;}
         PiecewiseHeading piecewiseTest = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .constant(0.6, 1.0, Math.toRadians(304));  // back of robot faces goal for last 40%
+                .constant(0.6, 1.0, Math.toRadians(heading));  // back of robot faces goal for last 40%
+        int weirdheading = 306;
+        if (!isBlue) { weirdheading = 238;}
+        PiecewiseHeading piecewiseThing = new PiecewiseHeading()
+                .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
+                .constant(0.6, 1.0, Math.toRadians(heading));  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
                 intake(CLOSE_SCORE),
 
                 new ParallelCommandGroup(
                     new InstantCommand(() -> robot.conveyor.feed(true)),
-                    new Shoot(follower, 750, 1750, isBlue)
+                    new Shoot(follower, 500, 1750, isBlue)
                 ),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
@@ -252,11 +259,11 @@ public class Auton extends CommandOpMode {
                 // Pick up PPG Spike Mark
                 intake(new Pose[]{CLOSE_PPG, CLOSE_PPG_1}),
                 // Score 3
-                shoot(CLOSE_SCORE, 1750, piecewiseTest),
+                shoot(CLOSE_SCORE, 1750, piecewiseThing),
                 // Pick up GPP Spike Mark
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
-                shoot(CLOSE_END, 1650, piecewiseScore)
+                shoot(CLOSE_END, 1550, piecewiseScore)
         );
     }
 

@@ -86,10 +86,11 @@ public class Teleop extends CommandOpMode {
 
     // Heading PIDF controller for aimbot — tune kP in Constants if tracking feels sluggish or oscillates
     private final PIDFController headingController =
-            new PIDFController(new com.pedropathing.control.PIDFCoefficients(0.5, 0, 0.04, 0.025));
+            new PIDFController(new com.pedropathing.control.PIDFCoefficients(0.8, 0, 0.04, 0.025));
 
     // Reset poses (field coordinates, Pedro system)
     public static double[] RESET_RED  = {9,   8,  90};
+    public static double[] RESET_BLUE = {135, 8, 90};
 
     // Park pose
     public static double[] PARK_POSE = {41.678, 29.632, 270};
@@ -193,6 +194,9 @@ public class Teleop extends CommandOpMode {
         operator.getGamepadButton(GamepadKeys.Button.A).whenReleased(
                 new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
         );
+        operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
+                new InstantCommand(() -> follower.setPose(toPose(RESET_BLUE)))
+        );
 
         // Y - unjam intake
         /*
@@ -243,9 +247,7 @@ public class Teleop extends CommandOpMode {
             if (isBlue) {
                 goalPose = GOAL_POSE_BLUE;
                 invert = -1;
-                ALLIANCE_COLOR = AllianceColor.BLUE;
-                RESET_RED = new double[]{135, 8, 90};
-            } else {
+                ALLIANCE_COLOR = AllianceColor.BLUE;} else {
                 goalPose = GOAL_POSE_RED;
                 invert = 1;
                 ALLIANCE_COLOR = AllianceColor.RED;

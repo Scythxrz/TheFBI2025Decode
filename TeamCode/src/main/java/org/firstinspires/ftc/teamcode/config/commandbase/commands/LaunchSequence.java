@@ -117,20 +117,21 @@ public class LaunchSequence extends CommandBase {
                 break;
 
             case FEEDING:
-                /*if (firingMode == FiringMode.PACED) {
-                    // PACED: close gate if heading/flywheel lost mid-shot
-                    if (!readyToFire) { //&& !spinTimedOut) {
+                if (firingMode == FiringMode.PACED) {
+                    // PACED: close gate if heading or flywheel lost mid-shot
+                    if (!readyToFire) {
                         conveyor.stop();
                         spinUpStart = System.currentTimeMillis();
                         state = State.WAITING;
                         break;
                     }
+                    // Ball detected — close gate and wait for flywheel to recover
                     if (detector.update()) {
                         conveyor.stop();
                         spinUpStart = System.currentTimeMillis();
                         state = State.RECOVERING;
                     }
-                }*/
+                }
                 // RAPID: gate stays open unconditionally — operator controls duration
                 break;
 

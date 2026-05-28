@@ -5,11 +5,11 @@ import com.pedropathing.geometry.Pose;
 import com.seattlesolvers.solverslib.command.SequentialCommandGroup;
 
 /**
- * MoveAndShoot — drives to a pose then fires for feedTimeMs after arriving.
+ * MoveAndShoot — drives to a pose then fires after arriving.
  * WindUpAndDrive spins the flywheel during transit so it is ready on arrival.
  *
- * slowFeed=true uses CONVEYOR_FAR_SPEED (0.4) — same as PACED mode in TeleOp.
- * Omit slowFeed (or pass false) for full close-range conveyor speed.
+ * Pass paced=true (shootF in Auton) to use paced mode — the conveyor pauses
+ * after each detected ball and waits for flywheel recovery before the next.
  */
 public class MoveAndShoot extends SequentialCommandGroup {
 
@@ -17,16 +17,9 @@ public class MoveAndShoot extends SequentialCommandGroup {
     public MoveAndShoot(Follower follower, Pose targetPose,
                         long feedTimeMs, double overrideVelocity,
                         boolean isBlue, DriveToPose.HeadingMode headingMode) {
-        this(follower, targetPose, feedTimeMs, overrideVelocity, isBlue, headingMode, false);
-    }
-
-    /** Straight line, heading mode, optional slow feed. */
-    public MoveAndShoot(Follower follower, Pose targetPose,
-                        long feedTimeMs, double overrideVelocity,
-                        boolean isBlue, DriveToPose.HeadingMode headingMode, boolean slowFeed) {
         addCommands(
                 new WindUpAndDrive(follower, targetPose, overrideVelocity, headingMode, 1.0),
-                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue, false, slowFeed)
+                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue)
         );
     }
 
@@ -34,16 +27,19 @@ public class MoveAndShoot extends SequentialCommandGroup {
     public MoveAndShoot(Follower follower, Pose targetPose,
                         long feedTimeMs, double overrideVelocity,
                         boolean isBlue, PiecewiseHeading piecewiseHeading) {
-        this(follower, targetPose, feedTimeMs, overrideVelocity, isBlue, piecewiseHeading, false);
-    }
-
-    /** Straight line, piecewise heading, optional slow feed. */
-    public MoveAndShoot(Follower follower, Pose targetPose,
-                        long feedTimeMs, double overrideVelocity,
-                        boolean isBlue, PiecewiseHeading piecewiseHeading, boolean slowFeed) {
         addCommands(
                 new WindUpAndDrive(follower, targetPose, overrideVelocity, piecewiseHeading, 1.0),
-                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue, false, slowFeed)
+                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue)
+        );
+    }
+
+    /** Straight line, piecewise heading, paced mode flag. */
+    public MoveAndShoot(Follower follower, Pose targetPose,
+                        long feedTimeMs, double overrideVelocity,
+                        boolean isBlue, PiecewiseHeading piecewiseHeading, boolean paced) {
+        addCommands(
+                new WindUpAndDrive(follower, targetPose, overrideVelocity, piecewiseHeading, 1.0),
+                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue, false, true, paced)
         );
     }
 
@@ -51,16 +47,9 @@ public class MoveAndShoot extends SequentialCommandGroup {
     public MoveAndShoot(Follower follower, Pose[] waypoints,
                         long feedTimeMs, double overrideVelocity,
                         boolean isBlue, DriveToPose.HeadingMode headingMode) {
-        this(follower, waypoints, feedTimeMs, overrideVelocity, isBlue, headingMode, false);
-    }
-
-    /** Bezier curve, heading mode, optional slow feed. */
-    public MoveAndShoot(Follower follower, Pose[] waypoints,
-                        long feedTimeMs, double overrideVelocity,
-                        boolean isBlue, DriveToPose.HeadingMode headingMode, boolean slowFeed) {
         addCommands(
                 new WindUpAndDrive(follower, waypoints, overrideVelocity, headingMode, 1.0),
-                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue, false, slowFeed)
+                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue)
         );
     }
 
@@ -68,16 +57,9 @@ public class MoveAndShoot extends SequentialCommandGroup {
     public MoveAndShoot(Follower follower, Pose[] waypoints,
                         long feedTimeMs, double overrideVelocity,
                         boolean isBlue, PiecewiseHeading piecewiseHeading) {
-        this(follower, waypoints, feedTimeMs, overrideVelocity, isBlue, piecewiseHeading, false);
-    }
-
-    /** Bezier curve, piecewise heading, optional slow feed. */
-    public MoveAndShoot(Follower follower, Pose[] waypoints,
-                        long feedTimeMs, double overrideVelocity,
-                        boolean isBlue, PiecewiseHeading piecewiseHeading, boolean slowFeed) {
         addCommands(
                 new WindUpAndDrive(follower, waypoints, overrideVelocity, piecewiseHeading, 1.0),
-                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue, false, slowFeed)
+                new Shoot(follower, feedTimeMs, overrideVelocity, isBlue)
         );
     }
 }
