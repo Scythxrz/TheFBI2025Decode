@@ -79,6 +79,7 @@ public class Auton extends CommandOpMode {
     private boolean  isBlue           = true;
     private JoinedTelemetry telemetryM; // initialized in initialize() — telemetry is null at field-init time
     private boolean upLast, downLast, leftLast, rightLast;
+    private boolean stupidVar = false;
 
     // ─── initialize() ─────────────────────────────────────────────────────────
     @Override
@@ -151,15 +152,18 @@ public class Auton extends CommandOpMode {
         } else {
             robot.flywheel.setVelocity(2300);
         }
+        if (stupidVar) {
+            robot.flywheel.setVelocity(1550);
+        }
         follower.update();
         RobotDrawing.drawDebug(follower);
-
         telemetryM.addData("Loop ms",   loopTimer.milliseconds());
         telemetryM.addData("Pose",      follower.getPose());
         telemetryM.addData("Flywheel",  robot.flywheel.getVelocity());
         telemetryM.addData("FW Target", robot.flywheel.getTargetVelocity());
         telemetryM.addData("FW Ready",  robot.flywheel.atTarget());
         telemetryM.addData("Start Pose", startPose());
+        telemetryM.addData("Conveyor State", robot.conveyor.getState());
 
         loopTimer.reset();
         robot.updateLoop(telemetryM);
@@ -231,19 +235,16 @@ public class Auton extends CommandOpMode {
         PiecewiseHeading piecewiseTest = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
                 .constant(0.6, 1.0, Math.toRadians(heading));  // back of robot faces goal for last 40%
-        int weirdheading = 306;
+        int weirdheading = 308;
         if (!isBlue) { weirdheading = 238;}
         PiecewiseHeading piecewiseThing = new PiecewiseHeading()
                 .reversedTangent(0.0, 0.6)                                                    // follow path direction for first 60%
-                .constant(0.6, 1.0, Math.toRadians(heading));  // back of robot faces goal for last 40%
+                .constant(0.6, 1.0, Math.toRadians(weirdheading));  // back of robot faces goal for last 40%
         return new SequentialCommandGroup(
                 // Shoot preloads into goal while moving
                 intake(CLOSE_SCORE),
-
-                new ParallelCommandGroup(
-                    new InstantCommand(() -> robot.conveyor.feed(true)),
-                    new Shoot(follower, 500, 1750, isBlue)
-                ),
+                //new InstantCommand(() -> robot.conveyor.forward()),
+                new Shoot(follower, 500, 1750, isBlue),
                 // Pick up PGP Spike Mark
                 intake(new Pose[]{CLOSE_PGP, CLOSE_PGP_1}),
                 // Score 3
@@ -261,6 +262,7 @@ public class Auton extends CommandOpMode {
                 // Score 3
                 shoot(CLOSE_SCORE, 1750, piecewiseThing),
                 // Pick up GPP Spike Mark
+                new InstantCommand(() -> stupidVar = true),
                 intake(new Pose[]{CLOSE_GPP, CLOSE_GPP_1}),
                 // Score 3
                 shoot(CLOSE_END, 1550, piecewiseScore)
@@ -353,7 +355,7 @@ public class Auton extends CommandOpMode {
                 new InstantCommand(() -> robot.flywheel.off()),
                 new ParallelCommandGroup(
                         new SetIntake(MotorState.FORWARD),
-                        new InstantCommand(() -> robot.conveyor.forward()),
+                        //new InstantCommand(() -> robot.conveyor.forward()),
                         new DriveToPose(follower, p(to), TANGENTIAL, 1)
                 ),
                 new SetIntake(MotorState.STOP)

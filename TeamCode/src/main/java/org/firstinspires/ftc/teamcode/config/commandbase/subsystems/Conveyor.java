@@ -74,16 +74,17 @@ public class Conveyor extends SubsystemBase {
     public double getConveyorVelocity() {
         return robot.conveyorMotor.getVelocity();
     }
-
+    public ConveyorState getState() {
+        return state;
+    }
 
     // ─── Periodic ─────────────────────────────────────────────────────────────
 
     @Override
     public void periodic() {
-        if (state == ConveyorState.FEEDING) {
-            if (System.currentTimeMillis() - feedStartTime > CONVEYOR_FEED_DELAY_MS) {
+        if (state == ConveyorState.FEEDING || state == ConveyorState.FORWARD) {
                 robot.conveyorMotor.set(conveyorSpeed);
-            }
+
         }
     }
 }
