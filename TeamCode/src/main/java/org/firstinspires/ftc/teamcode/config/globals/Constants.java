@@ -44,7 +44,7 @@ public class Constants {
      *   kI  — integral: eliminates small persistent offset (use sparingly).
      *   kD  — derivative: dampens overshoot on spin-up.
      */
-    public static double SHOOTER_KF = 0.00038;  // ≈ 1 / 2400
+    public static double SHOOTER_KF = 0.0045;  // ≈ 1 / 2400
     public static double SHOOTER_KP = 0.001;
     public static double SHOOTER_KI = 0.0;
     public static double SHOOTER_KD = 0.0;
