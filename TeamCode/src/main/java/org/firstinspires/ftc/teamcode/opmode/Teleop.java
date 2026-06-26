@@ -191,10 +191,10 @@ public class Teleop extends CommandOpMode {
                     new InstantCommand(() -> robot.conveyor.stop())
                 )
         );
-        operator.getGamepadButton(GamepadKeys.Button.A).whenReleased(
+        operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
                 new InstantCommand(() -> follower.setPose(toPose(RESET_RED)))
         );
-        operator.getGamepadButton(GamepadKeys.Button.B).whenReleased(
+        operator.getGamepadButton(GamepadKeys.Button.X).whenReleased(
                 new InstantCommand(() -> follower.setPose(toPose(RESET_BLUE)))
         );
 
